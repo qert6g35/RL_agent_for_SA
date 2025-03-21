@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any
+import random
 
 class Problem(ABC):
     """Abstract base class for an optimization problem."""
@@ -20,7 +21,7 @@ class Problem(ABC):
         pass
 
 class VRP(Problem):
-    def __init__(self,distances):
+    def __init__(self,distances = None):
         if distances is not None:
             self.distances = distances
         else:
@@ -32,11 +33,17 @@ class VRP(Problem):
             ]
         super().__init__()
 
+    def isFirstBetter(x,y):
+        return x < y
+
     def objective_function(self, x: Any) -> float:
-        return sum([self.distances[x[i]][x[i+1]] for i in range(len(x)-1)])
+        return sum([self.distances[x[i-1]][x[i]] for i in range(len(x))])
     
     def get_initial_solution(self):
         return [f for f in range(len(self.distances))]
     
     def get_random_neighbor(self, x: Any):
-        return super().get_neighbor(x)
+        swap_place = random.randint(1,len(x)-1)
+        return x[swap_place:] + x[:swap_place]
+    
+print(VRP().objective_function([0,1,2,3])) #1+4+6+3 = 14
