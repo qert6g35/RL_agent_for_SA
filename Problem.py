@@ -10,6 +10,10 @@ class Problem(ABC):
         """Evaluate the objective function at a given solution."""
         pass
 
+    def isFirstBetter(x,y):
+        """Defines if x is better than y"""
+        pass
+
     @abstractmethod
     def get_initial_solution(self) -> Any:
         """Return an initial solution for the optimization problem."""
@@ -21,6 +25,7 @@ class Problem(ABC):
         pass
 
 class VRP(Problem):
+    #its VRP with returns
     def __init__(self,distances = None):
         if distances is not None:
             self.distances = distances
@@ -33,9 +38,6 @@ class VRP(Problem):
             ]
         super().__init__()
 
-    def isFirstBetter(x,y):
-        return x < y
-
     def objective_function(self, x: Any) -> float:
         return sum([self.distances[x[i-1]][x[i]] for i in range(len(x))])
     
@@ -46,4 +48,10 @@ class VRP(Problem):
         swap_place = random.randint(1,len(x)-1)
         return x[swap_place:] + x[:swap_place]
     
-print(VRP().objective_function([0,1,2,3])) #1+4+6+3 = 14
+    def isFirstBetter(self,x,y):
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+            return x < y
+        elif isinstance(x, list) and isinstance(y, list):
+            return self.objective_function(x) < self.objective_function(y)  # Example comparison for lists
+        else:
+            raise TypeError("Unsupported types for comparison")
