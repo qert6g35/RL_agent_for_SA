@@ -42,11 +42,16 @@ class VRP(Problem):
         return sum([self.distances[x[i-1]][x[i]] for i in range(len(x))])
     
     def get_initial_solution(self):
-        return [f for f in range(len(self.distances))]
+        initial_solution = [f for f in range(len(self.distances))]
+        random.shuffle(initial_solution)
+        return initial_solution
     
     def get_random_neighbor(self, x: Any):
-        swap_place = random.randint(1,len(x)-1)
-        return x[swap_place:] + x[:swap_place]
+        swap_place_a = random.randint(0,len(x))
+        swap_place_b = random.randint(0,len(x))
+        if swap_place_a > swap_place_b:
+            swap_place_a, swap_place_b = swap_place_b, swap_place_a
+        return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
     
     def isFirstBetter(self,x,y):
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
