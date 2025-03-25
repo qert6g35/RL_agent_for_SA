@@ -6,7 +6,7 @@ import tsplib95
 import random
 
 
-problem = tsplib95.load('C:/Users/piotr/OneDrive/Pulpit/MAGISTERKA/RL_agent_for_SA\VRP_examle/a280.tsp')
+problem = tsplib95.load('C:/Users/piotr/OneDrive/Pulpit/MAGISTERKA/RL_agent_for_SA/VRP_examle/a280.tsp')
 distance_matrix = [[problem.get_weight(i, j) for j in problem.get_nodes()] for i in problem.get_nodes()]
 print(distance_matrix)
 problem = Problem.VRP(distances=distance_matrix)
@@ -14,11 +14,11 @@ problem = Problem.VRP(distances=distance_matrix)
 simulated_anneling_engine = SA.SA(problem)
 
 
-max_steps = 100000
+max_steps = 500000
 
 starting_temp = 1000
-ending_temp = 0.01
-end_steps = int(max_steps/5)
+ending_temp = 0.001
+end_steps = int(max_steps/2)
 
 TSM = TempSheduler.LinearTempSheduler(start_temp=starting_temp,end_temp=ending_temp,end_steps=end_steps)
 
