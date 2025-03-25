@@ -19,7 +19,7 @@ class DQN:
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=0.001)
 
-    def learnNetwork(self, state_batch, action_batch, reward_batch, nextState_batch, done):
+    def learnNetwork(self, state_batch, action_batch, reward_batch, nextState_batch):
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                             nextState_batch)), dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in nextState_batch
@@ -55,6 +55,43 @@ class DQN:
         # self.loss = self.loss(target_f, self.policy_net(state))
         # self.loss.backward()
         
+    def run(self, episodes, SA):
+        for i_episode in range(episodes):
+            # Initialize the environment and get its state
+            state, info = env.reset()
+            state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+            for t in count():
+                action = select_action(state)
+                observation, reward, terminated, truncated, _ = env.step(action.item())
+                reward = torch.tensor([reward])
+                done = terminated or truncated
+
+                if terminated:
+                    next_state = None
+                else:
+                    next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
+
+                # Store the transition in memory
+                memory.push(state, action, next_state, reward)
+
+                # Move to the next state
+                state = next_state
+
+                # Perform one step of the optimization (on the policy network)
+                optimize_model()
+
+                # Soft update of the target network's weights
+                # θ′ ← τ θ + (1 −τ )θ′
+                target_net_state_dict = target_net.state_dict()
+                policy_net_state_dict = policy_net.state_dict()
+                for key in policy_net_state_dict:
+                    target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
+                target_net.load_state_dict(target_net_state_dict)
+
+                if done:
+                    episode_durations.append(t + 1)
+                    plot_durations()
+                    break
 
     def saveModel(self):
         torch.save(self.policy_net.state_dict(), "DQN_policy_model_"+datetime.today().strftime('%Y_%m_%d_%H_%M'))
