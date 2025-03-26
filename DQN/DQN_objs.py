@@ -1,4 +1,4 @@
-import deque
+from collections import deque
 import random
 
 class Transition(object):

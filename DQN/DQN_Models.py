@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch.functional as F
+import torch.nn.functional as F
 # The TUTORIAL neural network architecture
 class DQN_NN(nn.Module):
 
