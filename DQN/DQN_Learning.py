@@ -2,13 +2,14 @@ import DQN_Models as models
 import DQN_objs as objs
 import torch.nn as nn
 from numpy import amax
+import DQN_SA
 import torch
 from datetime import datetime
 
 
 class DQN:
     
-    def __init__(self, n_observations, n_actions,load_model_path=None):
+    def __init__(self, env:DQN_SA.SA_env ,load_model_path=None):
         self.memory = objs.ReplayMemory(10000)
         self.gamma = 0.95    # discount rate
         self.epsilon = 1.0
