@@ -17,10 +17,10 @@ class DQN:
         self.epsilon = 1.0
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.0001
-        self.policy_net = models.DQN_NN(env.action_space, env.observation_space)
+        self.policy_net = models.DQN_NN(env.observation_space,env.action_space)
         if load_model_path is not None:
             self.policy_net.load_state_dict(torch.load(load_model_path))
-        self.target_net = models.DQN_NN(env.action_space, env.observation_space)
+        self.target_net = models.DQN_NN(env.observation_space,env.action_space)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=0.001)
         self.env = env
@@ -43,6 +43,8 @@ class DQN:
         # Compute Huber loss
         criterion = nn.SmoothL1Loss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+        #loss = criterion(torch.tensor(self.policy_net(self.env.observation())),torch.tensor([ 0.0,  0.0,  0.0,  69.0,   0.0,   0.0,0.0,  0.0,   0.0,  0.0,  0.0,  0.0,0.0,   0.0,   0.0]))
+
 
         # Optimize the model
         self.optimizer.zero_grad()
@@ -93,12 +95,15 @@ class DQN:
         torch.save(self.policy_net.state_dict(), "DQN_policy_model_"+datetime.today().strftime('%Y_%m_%d_%H_%M'))
 
     def select_action(self, state):
+        if(type(state)!= torch.Tensor):
+            state = torch.tensor(state,dtype=torch.float)
+
         if(self.epsilon > self.epsilon_min):
             self.epsilon *= self.epsilon_decay
         else:
             self.epsilon = self.epsilon_min
         if random.random() < self.epsilon:
             with torch.no_grad():
-                return self.policy_net(state).max(1)[1].view(1, 1)
+                return torch.tensor([self.env.actions[torch.argmax(self.policy_net(state))]], dtype=torch.float)
         else:
-            return torch.tensor([self.env.actions[random.randrange(self.env.action_space)]], dtype=torch.long)
+            return torch.tensor([self.env.actions[random.randrange(start=0,stop=self.env.action_space)]], dtype=torch.float)

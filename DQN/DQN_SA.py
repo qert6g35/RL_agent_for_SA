@@ -10,7 +10,7 @@ class SA_env:
         else:
             self.SA = SA.SA(problem=Problem.VRP())
 
-        self.actions = [f * 0.01 for f in range(80,121,2)]
+        self.actions = [float(f) * 0.01 for f in range(80,121,2)]
         self.starting_temp = strating_temp
         self.current_temp = strating_temp
         self.max_steps = max_steps

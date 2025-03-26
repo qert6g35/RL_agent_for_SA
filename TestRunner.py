@@ -4,11 +4,16 @@ import TempSheduler
 import matplotlib.pyplot as plt
 import tsplib95
 import random
+import torch
 
 DQN = DQN.DQN()
-DQN.epsilon = 1
+DQN.epsilon = 0
 action_selction = DQN.select_action(DQN.env.observation())
 print(action_selction)
+
+for _ in range(1000):
+    DQN.learnNetwork(None,None,None,None)
+
 DQN.epsilon = 0
 action_selction = DQN.select_action(DQN.env.observation())
 print(action_selction)
