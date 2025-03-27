@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 import random
+import os
+import tsplib95
 
 class Problem(ABC):
     """Abstract base class for an optimization problem."""
@@ -30,12 +32,9 @@ class VRP(Problem):
         if distances is not None:
             self.distances = distances
         else:
-            self.distances = [
-                [0, 1, 2, 3],
-                [1, 0, 4, 5],
-                [2, 4, 0, 6],
-                [3, 5, 6, 0]
-            ]
+            problem = tsplib95.load(self.choose_random_file('VRP_examle'))
+            print("choosed problem:",problem)
+            self.distances = [[problem.get_weight(i, j) for j in problem.get_nodes()] for i in problem.get_nodes()]
         super().__init__()
 
     def objective_function(self, x: Any) -> float:
@@ -60,3 +59,16 @@ class VRP(Problem):
             return self.objective_function(x) < self.objective_function(y)  # Example comparison for lists
         else:
             raise TypeError("Unsupported types for comparison")
+    
+    def choose_random_file(self,folder_path):
+        """Returns the full path of a randomly chosen file from the given folder."""
+        if not os.path.isdir(folder_path):
+            raise ValueError(f"Invalid directory: {folder_path}")
+        
+        files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+        
+        if not files:
+            raise FileNotFoundError("No files found in the given folder.")
+        
+        return os.path.join(folder_path, random.choice(files))
+

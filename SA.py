@@ -1,11 +1,11 @@
-from Problem import Problem
+import Problem
 import random
 import math
 from TempSheduler import TempSheduler
     
 
 class SA:
-    def __init__(self, problem:Problem, initial_solution = None):
+    def __init__(self, problem:Problem.Problem = Problem.VRP(), initial_solution = None):
         #params
         self.steps_done = 0
         self.problem = problem

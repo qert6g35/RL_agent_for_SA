@@ -5,22 +5,30 @@ import matplotlib.pyplot as plt
 import tsplib95
 import random
 import torch
+import SA
 
-DQN = DQN.DQN()
-DQN.epsilon = 0
-action_selction = DQN.select_action(DQN.env.observation())
-print(action_selction)
+DQN_eng = DQN.DQN()
 
-for _ in range(1000):
-    DQN.learnNetwork(None,None,None,None)
+DQN_eng.run(100)
 
-DQN.epsilon = 0
-action_selction = DQN.select_action(DQN.env.observation())
-print(action_selction)
-# problem = tsplib95.load('VRP_example/a280.tsp')
-# distance_matrix = [[problem.get_weight(i, j) for j in problem.get_nodes()] for i in problem.get_nodes()]
-# print(distance_matrix)
-# problem = Problem.VRP(distances=distance_matrix)
+def CHECK_IF_NETWORK_IS_LEARNING_GIVEN_DATA():
+    DQN_engine = DQN.DQN()
+    DQN_engine.epsilon = 0
+    action_selction = DQN_engine.policy_net(torch.Tensor(DQN_engine.env.observation()))
+    print(action_selction)
+
+    for i in range(1000):
+        DQN_engine.FORCE_learnNetwork(None,None,None,None)
+        if i%100 == 0:
+            action_selction = DQN_engine.policy_net(torch.Tensor(DQN_engine.env.observation()))
+            print(action_selction)
+
+    DQN_engine.epsilon = 0
+    action_selction = DQN_engine.policy_net(torch.Tensor(DQN_engine.env.observation()))
+    print(action_selction)
+
+
+# problem = Problem.VRP()
 
 # simulated_anneling_engine = SA.SA(problem)
 
