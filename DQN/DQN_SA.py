@@ -5,12 +5,12 @@ import Problem
 #SA enviroment devined for DQN
 class SA_env:
 
-    def __init__(self,preset_problem = None,max_steps = 5000,strating_temp = 1000):
+    def __init__(self,preset_problem = None,max_steps = 5000,strating_temp = 1000,no_reward_steps = 20):
         if preset_problem != None:
             self.SA = SA.SA(preset_problem)
         else:
             self.SA = SA.SA()
-
+        self.no_reward_steps = no_reward_steps
         self.actions = [float(f) * 0.01 for f in range(80,121,2)]
         self.starting_temp = strating_temp
         self.current_temp = strating_temp
@@ -28,23 +28,31 @@ class SA_env:
         # obliczamy nagrodę (trzeba dobrze przemyśleć poniższe pomysły na nagrody/kary)
         # różne źródła nagród powinniśmy ze sobą nawzajem ważyć
         # !!! KROKI BEZ POPRAWY WARTOŚCI FUNKCJI CELU NIE POWINNY BYĆ NAGRODZONE !!! 
+        # kara za zdropowanie temperatury do 0 zbyt szybko i nie podnoszenie jej przez dłuższy czas
         # kara za każdy krok bez poprawy best_solution 
         # kara za zakończenie ze zbyt wysoką temperaturę
         # nagroda za poprawę best_solution
         # nagroda za zakończenie z niską temperaturą
         # kara za zbyt gwałtowną zmianę temperatury (machanie góra dół lub wybieranie tylko gwałtowniejszych zmian)
         # kara za temperaturę przekraczającą startową temperaturę
-        
+
+
+        # nagroda za poprawę best value
         reward = self.run_history[-1][1] - new_observation[1]
         if reward < 0:
             reward = -reward
-
         reward = reward * (math.log(self.SA.steps_done + 1)/2)
-        
+        # do X kroków nie oferujemy nagrody za poprawienie best value
+        if self.SA.steps_done < self.no_reward_steps:
+            reward = 0.0    
+
+
         if self.SA.steps_done < self.max_steps:
             is_terminated = False
         else:
             is_terminated = True
+
+        
 
         self.run_history.append( new_observation + [reward,self.current_temp] )
 
@@ -65,3 +73,5 @@ class SA_env:
     def observation(self):
         # ! ?? WARTO DODAĆ NORMALIZACJĘ DANYCH !!!
         return [self.SA.current_solution_value, self.SA.best_solution_value,self.SA.steps_done,self.current_temp]
+    
+    

@@ -33,7 +33,6 @@ class VRP(Problem):
             self.distances = distances
         else:
             problem = tsplib95.load(self.choose_random_file('VRP_examle'))
-            print("choosed problem:",problem)
             self.distances = [[problem.get_weight(i, j) for j in problem.get_nodes()] for i in problem.get_nodes()]
         super().__init__()
 

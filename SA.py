@@ -5,16 +5,19 @@ from TempSheduler import TempSheduler
     
 
 class SA:
-    def __init__(self, problem:Problem.Problem = Problem.VRP(), initial_solution = None):
+    def __init__(self, preset_problem:Problem.Problem = None, initial_solution = None):
         #params
         self.steps_done = 0
-        self.problem = problem
+        if preset_problem is not None:
+            self.problem = preset_problem
+        else:
+            self.problem = Problem.VRP()
         #setting up initial solution
         if initial_solution != None:
             self.current_solution = initial_solution
         else:
-            self.current_solution = problem.get_initial_solution()
-        self.current_solution_value = problem.objective_function(self.current_solution)
+            self.current_solution = self.problem.get_initial_solution()
+        self.current_solution_value = self.problem.objective_function(self.current_solution)
         # setting first best solution
         self.best_solution = self.current_solution
         self.best_solution_value = self.current_solution_value

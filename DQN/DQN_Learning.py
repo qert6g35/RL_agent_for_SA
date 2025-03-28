@@ -17,23 +17,26 @@ if is_ipython:
 
 class DQN:
     
-    def __init__(self, env:DQN_SA.SA_env = DQN_SA.SA_env() ,load_model_path=None):
+    def __init__(self ,load_model_path=None):
         self.memory = objs.ReplayMemory(10000)
         self.gamma = 0.95    # discount rate
         self.tau = 0.02    # target network replacment factor
-        self.batch_size = int(env.max_steps/2)
+        self.env = DQN_SA.SA_env()
+        self.batch_size = int(self.env.max_steps/2)
+        self.fig  = None
+        self.axes = None
 
         self.epsilon = 1.0
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.015
 
-        self.policy_net = models.DQN_NN(env.observation_space,env.action_space)
+        self.policy_net = models.DQN_NN(self.env.observation_space,self.env.action_space)
         if load_model_path is not None:
             self.policy_net.load_state_dict(torch.load(load_model_path))
-        self.target_net = models.DQN_NN(env.observation_space,env.action_space)
+        self.target_net = models.DQN_NN(self.env.observation_space,self.env.action_space)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=0.001)
-        self.env = env
+        
 
 
     def learnNetwork(self, memory_sample): #works for any size of batch
@@ -78,7 +81,10 @@ class DQN:
             print(" ")
             print(f'Learning episode {i_episode}/{episodes}')
             # Initialize the environment and get its state
-            state = self.env.reset()
+            if i_episode != 0:
+                state = self.env.reset()
+            else:
+                state = self.env.observation()
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
             for t in count():
                 action = self.select_action(state)
@@ -110,6 +116,7 @@ class DQN:
                 self.target_net.load_state_dict(target_net_state_dict)
 
                 if done:
+                    self.saveModel(verssioning=start_learning_date_sample)
                     run_history = self.env.getFullParametersHistory()
                     self.plot_data_non_blocking([a[-2] for a in run_history],[a[-1] for a in run_history])
                     break
@@ -144,22 +151,34 @@ class DQN:
             return torch.tensor([[random.randrange(start=0,stop=self.env.action_space)]], dtype=torch.long)
             
         
-    def plot_data_non_blocking(self,y0,y1):
-        fig, axes = plt.subplots(1, 2, figsize=(10, 4))  # 1 row, 2 columns
+
+
+    def plot_data_non_blocking(self,y0, y1):
+        print("plotting")
+
+        if self.fig is None or self.axes is None:
+            plt.ion()  # Enable interactive mode
+            self.fig, self.axes = plt.subplots(1, 2, figsize=(10, 4))
+
+        # Clear previous plots to prevent overplotting
+        self.axes[0].cla()
+        self.axes[1].cla()
 
         # Left plot
-        axes[0].plot(y0, linestyle='-', color='b')
-        axes[0].set_title("Reward Plot")
-        axes[0].set_xlabel("X-axis")
-        axes[0].set_ylabel("Y-axis")
+        self.axes[0].plot(y0, linestyle='-', color='b')
+        self.axes[0].set_title("Reward Plot")
+        self.axes[0].set_xlabel("X-axis")
+        self.axes[0].set_ylabel("Y-axis")
 
         # Right plot
-        axes[1].plot(y1, linestyle='-', color='r')
-        axes[1].set_title("Temperature Plot")
-        axes[1].set_xlabel("X-axis")
-        plt.pause(0.001)  # Small pause to ensure the plot is updated
-        if is_ipython:
-            display.display(plt.gcf())
+        self.axes[1].plot(y1, linestyle='-', color='r')
+        self.axes[1].set_title("Temperature Plot")
+        self.axes[1].set_xlabel("X-axis")
+
+        # Force update of the figure
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        plt.pause(0.001)  # Short pause to allow GUI event loop to update
 
 
 
