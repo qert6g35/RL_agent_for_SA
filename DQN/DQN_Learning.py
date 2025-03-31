@@ -30,10 +30,10 @@ class DQN:
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.015
 
-        self.policy_net = models.DQN_NN(self.env.observation_space,self.env.action_space)
+        self.policy_net = models.DQN_NN_V1(self.env.observation_space,self.env.action_space)
         if load_model_path is not None:
             self.policy_net.load_state_dict(torch.load(load_model_path))
-        self.target_net = models.DQN_NN(self.env.observation_space,self.env.action_space)
+        self.target_net = models.DQN_NN_V1(self.env.observation_space,self.env.action_space)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=0.001)
         
@@ -74,9 +74,11 @@ class DQN:
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
         
-    def run(self, episodes):
+    def run(self, episodes, file_name_to_save_model:str = None):
         start_learning_date_sample = datetime.today().strftime('%Y_%m_%d_%H_%M')
         print(f'Started learning {start_learning_date_sample}')
+        if file_name_to_save_model is not None:
+            start_learning_date_sample = file_name_to_save_model
         for i_episode in range(episodes):
             print(" ")
             print(f'Learning episode {i_episode}/{episodes}')
@@ -118,7 +120,8 @@ class DQN:
                 if done:
                     self.saveModel(verssioning=start_learning_date_sample)
                     run_history = self.env.getFullParametersHistory()
-                    self.plot_data_non_blocking([a[-2] for a in run_history],[a[-1] for a in run_history])
+
+                    self.plot_data_non_blocking(Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])
                     break
 
     def saveModel(self,verssioning):
@@ -153,27 +156,43 @@ class DQN:
         
 
 
-    def plot_data_non_blocking(self,y0, y1):
+    def plot_data_non_blocking(self,Reward, Temperature, current_values, best_values):
         print("plotting")
 
         if self.fig is None or self.axes is None:
             plt.ion()  # Enable interactive mode
-            self.fig, self.axes = plt.subplots(1, 2, figsize=(10, 4))
+            self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 7))
 
         # Clear previous plots to prevent overplotting
-        self.axes[0].cla()
-        self.axes[1].cla()
-
+        print(self.axes)
+        self.axes[0][0].cla()
+        self.axes[0][1].cla()
+        self.axes[1][0].cla()
+        self.axes[1][1].cla()
         # Left plot
-        self.axes[0].plot(y0, linestyle='-', color='b')
-        self.axes[0].set_title("Reward Plot")
-        self.axes[0].set_xlabel("X-axis")
-        self.axes[0].set_ylabel("Y-axis")
+        self.axes[0][0].plot(Reward, linestyle='-', color='b')
+        self.axes[0][0].set_title("Reward Plot")
+        #self.axes[0].set_xlabel("X-axis")
+        #self.axes[0].set_ylabel("Y-axis")
 
         # Right plot
-        self.axes[1].plot(y1, linestyle='-', color='r')
-        self.axes[1].set_title("Temperature Plot")
-        self.axes[1].set_xlabel("X-axis")
+        self.axes[0][1].plot(Temperature, linestyle='-', color='r')
+        self.axes[0][1].set_title("Temperature Plot")
+        #self.axes[1].set_xlabel("X-axis")
+        #self.axes[1].set_ylabel("Y-axis")
+
+        # Left plot
+        self.axes[1][0].plot(current_values, linestyle='-', color='b')
+        self.axes[1][0].plot(best_values, linestyle='-', color='r')
+        self.axes[1][0].set_title("SA Values")
+        #self.axes[0].set_xlabel("X-axis")
+        #self.axes[0].set_ylabel("Y-axis")
+
+        # Left plot
+        self.axes[1][1].plot(Reward, linestyle='-', color='b')
+        self.axes[1][1].set_title("Reward Plot")
+        #self.axes[0].set_xlabel("X-axis")
+        #self.axes[0].set_ylabel("Y-axis")
 
         # Force update of the figure
         self.fig.canvas.draw()

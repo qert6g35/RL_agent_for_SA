@@ -5,15 +5,19 @@ import Problem
 #SA enviroment devined for DQN
 class SA_env:
 
-    def __init__(self,preset_problem = None,max_steps = 5000,strating_temp = 1000,no_reward_steps = 20):
+    def __init__(self,preset_problem = None,max_steps = 5000,strating_temp = 1000,min_temp = 0.1):
         if preset_problem != None:
             self.SA = SA.SA(preset_problem)
         else:
             self.SA = SA.SA()
-        self.no_reward_steps = no_reward_steps
+        self.no_reward_steps = int(max_steps * 0.05)
+        print("no reward steps:",self.no_reward_steps)
         self.actions = [float(f) * 0.01 for f in range(80,121,2)]
+
         self.starting_temp = strating_temp
         self.current_temp = strating_temp
+        self.min_temp = min_temp
+
         self.max_steps = max_steps
         self.action_space = len(self.actions)
         self.observation_space = len(self.observation())
@@ -21,30 +25,43 @@ class SA_env:
         pass
 
     def step(self,action_number):
+        was_temp_lower_than_min = False
         self.current_temp = self.current_temp * self.actions[action_number]
+        if self.current_temp < self.min_temp:
+            was_temp_lower_than_min = True
+            self.current_temp = self.min_temp
+
         self.SA.step(self.current_temp)
         new_observation = self.observation()
         
-        # obliczamy nagrodę (trzeba dobrze przemyśleć poniższe pomysły na nagrody/kary)
-        # różne źródła nagród powinniśmy ze sobą nawzajem ważyć
-        # !!! KROKI BEZ POPRAWY WARTOŚCI FUNKCJI CELU NIE POWINNY BYĆ NAGRODZONE !!! 
+        # obliczamy nagrodę
+        # TODO nagrody których dodanie trzeba wykonać / przemyśleć
+        #! różne źródła nagród powinniśmy ze sobą nawzajem ważyć
+        #? KROKI BEZ POPRAWY WARTOŚCI FUNKCJI CELU NIE POWINNY BYĆ NAGRODZONE
         # kara za zdropowanie temperatury do 0 zbyt szybko i nie podnoszenie jej przez dłuższy czas
         # kara za każdy krok bez poprawy best_solution 
         # kara za zakończenie ze zbyt wysoką temperaturę
         # nagroda za poprawę best_solution
         # nagroda za zakończenie z niską temperaturą
         # kara za zbyt gwałtowną zmianę temperatury (machanie góra dół lub wybieranie tylko gwałtowniejszych zmian)
-        # kara za temperaturę przekraczającą startową temperaturę
-
+        #*  nagrody które już dodano
+        # nagroda za popawę najleprzej wartości
+        # kara za temperaturę przekraczającą <temp_min,starting_temp*2>
 
         # nagroda za poprawę best value
         reward = self.run_history[-1][1] - new_observation[1]
         if reward < 0:
             reward = -reward
         reward = reward * (math.log(self.SA.steps_done + 1)/2)
-        # do X kroków nie oferujemy nagrody za poprawienie best value
+        #* do X kroków nie oferujemy nagrody za poprawienie best value
         if self.SA.steps_done < self.no_reward_steps:
             reward = 0.0    
+        
+        #* kara za przekroczenie granic temperaturowych
+        if was_temp_lower_than_min:
+            reward -= 10
+        elif self.current_temp > self.starting_temp:
+            reward -= 10 * int(self.current_temp / self.starting_temp)
 
 
         if self.SA.steps_done < self.max_steps:
@@ -54,7 +71,7 @@ class SA_env:
 
         
 
-        self.run_history.append( new_observation + [reward,self.current_temp] )
+        self.run_history.append( new_observation + [reward])
 
         return new_observation, reward , is_terminated
 
@@ -70,8 +87,11 @@ class SA_env:
     def getFullParametersHistory(self):
         return self.run_history
 
-    def observation(self):
+    def observation(self,normalize = True,norm_reward_scale = 100.0):
+        normalize_factor = norm_reward_scale / self.SA.problem.getUpperBound()
         # ! ?? WARTO DODAĆ NORMALIZACJĘ DANYCH !!!
-        return [self.SA.current_solution_value, self.SA.best_solution_value,self.SA.steps_done,self.current_temp]
+        if normalize:
+            return [self.SA.current_solution_value * normalize_factor , self.SA.best_solution_value*normalize_factor,self.SA.steps_done,self.current_temp]
+        return [self.SA.current_solution_value, self.SA.best_solution_value,self.SA.steps_done,self.max_steps,self.starting_temp,self.min_temp,self.current_temp]
     
     

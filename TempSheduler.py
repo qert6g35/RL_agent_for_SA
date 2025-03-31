@@ -10,7 +10,7 @@ class TempSheduler(ABC):
         return:float - temperature for given step
     '''
     @abstractmethod 
-    def getTemp(self,step:int)->float:
+    def getTemp(self,*args)->float:
         pass
 
 class LinearTempSheduler(TempSheduler):
@@ -27,7 +27,24 @@ class LinearTempSheduler(TempSheduler):
         self.end_temp = end_temp
         self.temp_diff = (start_temp - end_temp) / end_steps
 
-    def getTemp(self, step):
-        if step >= self.end_steps:
+    def getTemp(self,*args):
+        if args[0] >= self.end_steps:
             return self.end_temp
-        return self.start_temp - self.temp_diff * step
+        return self.start_temp - self.temp_diff * args[0]
+    
+class ConstTempSheduler(TempSheduler):
+    ''' Linear temperature sheduler
+    
+        start_temp:float - starting temperature
+        end_temp:float - ending temperature
+        steps:int - number of steps to reach end temperature
+    '''
+
+    def __init__(self,temp:float = None):
+        if temp is not None:
+            self.const_temp = temp
+        else:
+            self.const_temp = 100
+
+    def getTemp(self, *args):
+        return self.const_temp

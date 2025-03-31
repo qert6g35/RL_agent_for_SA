@@ -25,31 +25,48 @@ class Problem(ABC):
     def get_random_neighbor(self, x: Any) -> Any:
         """Return a neighbor of a given solution."""
         pass
+    
+    @abstractmethod
+    def getUpperBound() -> float:
+        '''Should calculate (or at least aproximate) upperbound for given problem'''
+        pass
 
 class VRP(Problem):
     #its VRP with returns
-    def __init__(self,distances = None):
-        if distances is not None:
-            self.distances = distances
-        else:
+    def __init__(self):
+        # if distances is not None:
+        #     self.distances = distances
+        # else:
+        problem = tsplib95.load(self.choose_random_file('VRP_examle'))
+        while problem.dimension > 2000:
             problem = tsplib95.load(self.choose_random_file('VRP_examle'))
-            self.distances = [[problem.get_weight(i, j) for j in problem.get_nodes()] for i in problem.get_nodes()]
+        print("choosed problem with dimention:",problem.dimension)
+        self.graph = problem.get_graph(normalize=True)
+        self.upperBound = None
         super().__init__()
 
     def objective_function(self, x: Any) -> float:
-        return sum([self.distances[x[i-1]][x[i]] for i in range(len(x))])
+        return sum([self.graph.edges[x[0],x[1]]["weight"] for i in range(len(x))])
     
     def get_initial_solution(self):
-        initial_solution = [f for f in range(len(self.distances))]
+        initial_solution = [f for f in range(len(self.graph.nodes))]
         random.shuffle(initial_solution)
         return initial_solution
     
     def get_random_neighbor(self, x: Any):
-        swap_place_a = random.randint(0,len(x))
-        swap_place_b = random.randint(0,len(x))
-        if swap_place_a > swap_place_b:
-            swap_place_a, swap_place_b = swap_place_b, swap_place_a
-        return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
+        swap_place_a = random.randint(0,len(x)-1)
+        swap_place_b = random.randint(0,len(x)-1)
+        while swap_place_a == swap_place_b:
+            swap_place_b = random.randint(0,len(x)-1)
+        # smart neighbour devinition 
+        # if swap_place_a > swap_place_b:
+        #     swap_place_a, swap_place_b = swap_place_b, swap_place_a
+        # return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
+        
+        # dump neighbour devinition
+        x[swap_place_a],x[swap_place_b] = x[swap_place_b],x[swap_place_a]
+        return x
+
     
     def isFirstBetter(self,x,y):
         if isinstance(x, (int, float)) and isinstance(y, (int, float)):
@@ -70,4 +87,19 @@ class VRP(Problem):
             raise FileNotFoundError("No files found in the given folder.")
         
         return os.path.join(folder_path, random.choice(files))
+
+    def getUpperBound(self):
+        if self.upperBound is None:
+            upperBoundSolution = [0]
+            not_visited = [f for f in range(1,len(self.graph.nodes))]
+            while len(not_visited) > 0:
+                farthest_to_last = -1
+                dist_to_farthest = 0
+                for id in not_visited:
+                    if self.graph.edges[upperBoundSolution[-1],id]["weight"] > dist_to_farthest:
+                        farthest_to_last = id
+                        dist_to_farthest = self.graph.edges[upperBoundSolution[-1],id]["weight"]
+                upperBoundSolution.append(not_visited.pop(not_visited.index(farthest_to_last)))
+            self.upperBound = self.objective_function(upperBoundSolution)    
+        return self.upperBound
 
