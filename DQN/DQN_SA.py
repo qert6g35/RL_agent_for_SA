@@ -1,6 +1,7 @@
 import SA
 import math
 import Problem
+from itertools import count
 
 #SA enviroment devined for DQN
 class SA_env:
@@ -39,12 +40,11 @@ class SA_env:
         #! różne źródła nagród powinniśmy ze sobą nawzajem ważyć
         #? KROKI BEZ POPRAWY WARTOŚCI FUNKCJI CELU NIE POWINNY BYĆ NAGRODZONE
         # kara za zdropowanie temperatury do 0 zbyt szybko i nie podnoszenie jej przez dłuższy czas
-        # kara za każdy krok bez poprawy best_solution 
         # kara za zakończenie ze zbyt wysoką temperaturę
-        # nagroda za poprawę best_solution
         # nagroda za zakończenie z niską temperaturą
         # kara za zbyt gwałtowną zmianę temperatury (machanie góra dół lub wybieranie tylko gwałtowniejszych zmian)
-        #*  nagrody które już dodano
+        #*  nagrody które już 
+        
         # nagroda za popawę najleprzej wartości
         # kara za temperaturę przekraczającą <temp_min,starting_temp*2>
 
@@ -52,7 +52,8 @@ class SA_env:
         reward = self.run_history[-1][1] - new_observation[1]
         if reward < 0:
             reward = -reward
-        reward = reward * (math.log(self.SA.steps_done + 1)/2)
+        #! uwaga tutaj najbardziej newraligncze miejsce dycutujące o tym jak wygląda nagroda
+        reward = math.log(reward * self.SA.steps_done + 1)  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
         #* do X kroków nie oferujemy nagrody za poprawienie best value
         if self.SA.steps_done < self.no_reward_steps:
             reward = 0.0    
@@ -61,8 +62,17 @@ class SA_env:
         if was_temp_lower_than_min:
             reward -= 10
         elif self.current_temp > self.starting_temp:
-            reward -= 10 * int(self.current_temp / self.starting_temp)
+            reward -= 2 * int(self.current_temp / self.starting_temp)
 
+        #* kara za każde x kroków bez poprawy best_solution 
+        steps_without_solution_correction = 0
+        hist_len = len(self.run_history)
+        for i in count():
+            if self.run_history[-1-i][1] != new_observation[1] or i+1 == hist_len:
+                steps_without_solution_correction = i
+                break
+
+        reward -= int(steps_without_solution_correction/3)
 
         if self.SA.steps_done < self.max_steps:
             is_terminated = False
@@ -89,7 +99,6 @@ class SA_env:
 
     def observation(self,normalize = True,norm_reward_scale = 100.0):
         normalize_factor = norm_reward_scale / self.SA.problem.getUpperBound()
-        # ! ?? WARTO DODAĆ NORMALIZACJĘ DANYCH !!!
         if normalize:
             return [self.SA.current_solution_value * normalize_factor , self.SA.best_solution_value*normalize_factor,self.SA.steps_done,self.current_temp]
         return [self.SA.current_solution_value, self.SA.best_solution_value,self.SA.steps_done,self.max_steps,self.starting_temp,self.min_temp,self.current_temp]

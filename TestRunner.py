@@ -9,7 +9,7 @@ import SA
 
 DQN_eng = DQN()
 
-DQN_eng.run(100)
+DQN_eng.run(1000)
 
 
 #Learning episode 42/100
