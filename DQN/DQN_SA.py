@@ -72,7 +72,7 @@ class SA_env:
                 steps_without_solution_correction = i
                 break
 
-        reward -= int(steps_without_solution_correction/3)
+        reward -= int(steps_without_solution_correction/self.max_steps*25)
 
         if self.SA.steps_done < self.max_steps:
             is_terminated = False

@@ -118,14 +118,15 @@ class DQN:
                 self.target_net.load_state_dict(target_net_state_dict)
 
                 if done:
-                    self.saveModel(verssioning=start_learning_date_sample)
+                    self.saveModel(verssioning=start_learning_date_sample,episode=i_episode)
                     run_history = self.env.getFullParametersHistory()
 
                     self.plot_data_non_blocking(Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])
                     break
 
-    def saveModel(self,verssioning):
-        torch.save(self.policy_net.state_dict(), "DQN_policy_model_"+verssioning)
+    def saveModel(self,verssioning,episode):
+        eps_indicator = 1+int(episode/100)
+        torch.save(self.policy_net.state_dict(), "DQN_policy_model_"+verssioning+"_eps"+str(eps_indicator)+"00")
 
     def sampleMemoryBatch(self):
         if self.batch_size <= len(self.memory):
