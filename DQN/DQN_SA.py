@@ -44,7 +44,7 @@ class SA_env:
         # nagroda za zakończenie z niską temperaturą
         # kara za zbyt gwałtowną zmianę temperatury (machanie góra dół lub wybieranie tylko gwałtowniejszych zmian)
         #*  nagrody które już 
-        
+        # kara za każde x kroków bez poprawy best_solution 
         # nagroda za popawę najleprzej wartości
         # kara za temperaturę przekraczającą <temp_min,starting_temp*2>
 
@@ -100,6 +100,7 @@ class SA_env:
     def observation(self,normalize = True,norm_reward_scale = 100.0):
         normalize_factor = norm_reward_scale / self.SA.problem.getUpperBound()
         if normalize:
+            # dodać ilość korków od ostatniej poprawy i zamienić kroki+max_kroki na % ile zostało 
             return [self.SA.current_solution_value * normalize_factor , self.SA.best_solution_value*normalize_factor,self.SA.steps_done,self.current_temp]
         return [self.SA.current_solution_value, self.SA.best_solution_value,self.SA.steps_done,self.max_steps,self.starting_temp,self.min_temp,self.current_temp]
     
