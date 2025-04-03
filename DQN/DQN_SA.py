@@ -6,7 +6,7 @@ from itertools import count
 #SA enviroment devined for DQN
 class SA_env:
 
-    def __init__(self,preset_problem = None,max_steps = 5000):
+    def __init__(self,preset_problem = None,max_steps = 5000,count_reward = True):
         if preset_problem != None:
             self.SA = SA.SA(preset_problem)
         else:
@@ -78,24 +78,33 @@ class SA_env:
         if reward < 0:
             reward = -reward
         #! uwaga tutaj najbardziej newraligncze miejsce dycutujące o tym jak wygląda nagroda
-        reward = math.log(reward * self.SA.steps_done + 1)  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
+        reward = math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
         #* do X kroków nie oferujemy nagrody za poprawienie best value
         if self.SA.steps_done < self.no_reward_steps:
             reward = 0.0    
         
+        teperature_factor = self.current_temp/self.starting_temp
+
         #* kara za przekroczenie granic temperaturowych
         if was_temp_lower_than_min:
-            reward -= 10
+            reward -= 5.0
         elif self.current_temp > self.starting_temp:
-            punishment = 5 * (int(self.current_temp / self.starting_temp)-1)
+            punishment = 2.0 * (int(teperature_factor)-1)
             if punishment > 200:
                 punishment = 200
             reward -= punishment # silna kara za każdą krotność przekroczenia temperatur
 
         #* kara za każde x kroków bez poprawy best_solution 
-        steps_without_solution_correction = self.run_history[-1][3]
+        #! Kara została zmodyfikowana o specjalnie dobraną wartość * (1/(teperature_factor)-0.5) (sprawdź sobie wykres) nie karamy jak on stara się znaleźć nowe rozwiązanie w przypadku gdy 
+        steps_without_solution_correction = self.run_history[-1][3] * self.max_steps
 
-        reward -= int(steps_without_solution_correction/self.max_steps*25)
+        if (teperature_factor <= 2):
+            if (teperature_factor < 0.09):
+                reward -= (steps_without_solution_correction/self.max_steps*(10))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
+            elif teperature_factor < 1:
+                reward -= (steps_without_solution_correction/self.max_steps*(10))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
+        else:
+            reward -= (steps_without_solution_correction/self.max_steps*10) # tej sytuacji nie chcemy dodatkowo obciążać bo i tak mamy karę za zbyt dużą temperaturę 
 
         if self.SA.steps_done < self.max_steps:
             is_terminated = False
@@ -112,7 +121,7 @@ class SA_env:
     def getFullParametersHistory(self):
         return self.run_history
 
-    def observation(self,normalize = True,norm_reward_scale = 100.0):
+    def observation(self,normalize = True,norm_reward_scale = 200.0):
         normalize_factor = norm_reward_scale / self.SA.problem.getUpperBound()
 
         # obs = [
@@ -129,7 +138,7 @@ class SA_env:
             self.SA.current_solution_value, 
             self.SA.best_solution_value,
             self.SA.steps_done/self.max_steps, # (tutaj mamy ile już zrobiliśmy w %) zamienić kroki+max_kroki na % ile zostało 
-            self.getStepsWithoutCorrection(), # dodać ilość korków od ostatniej poprawy 
+            self.getStepsWithoutCorrection()/self.max_steps, # dodać ilość korków od ostatniej poprawy (dr)
             (self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp), # dodatkowa normalizacja tempreatury. z racji na to że zakres temperatury tez jest dobierany zaleznie od zadania 
             ]
 
