@@ -11,7 +11,7 @@ class SA:
         if preset_problem is not None:
             self.problem = preset_problem
         else:
-            self.problem = Problem.VRP()
+            self.problem = Problem.TSP()
         #setting up initial solution
         if initial_solution != None:
             self.current_solution = initial_solution

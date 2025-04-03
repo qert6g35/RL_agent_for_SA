@@ -18,17 +18,20 @@ if is_ipython:
 class DQN:
     
     def __init__(self ,load_model_path=None):
-        self.memory = objs.ReplayMemory(10000)
+        memory_samples_capacity = 100000
+        max_steps_for_sa = 5000
+        # for memory capacity we give how much transitions we want to store so there goes 
+        self.memory = objs.ReplayMemory(int(memory_samples_capacity/max_steps_for_sa))
         self.gamma = 0.95    # discount rate
         self.tau = 0.02    # target network replacment factor
-        self.env = DQN_SA.SA_env()
-        self.batch_size = int(self.env.max_steps/2)
+        self.env = DQN_SA.SA_env(max_steps=max_steps_for_sa)
+        self.batch_size = int(self.env.max_steps*1.5)
         self.fig  = None
         self.axes = None
-
+        
         self.epsilon = 1.0
-        self.epsilon_decay = 0.995
-        self.epsilon_min = 0.015
+        self.epsilon_decay = 0.988
+        self.epsilon_min = 0.05
 
         self.policy_net = models.DQN_NN_V1(self.env.observation_space,self.env.action_space)
         if load_model_path is not None:
@@ -55,7 +58,7 @@ class DQN:
 
         state_action_values = self.policy_net(state_batch).gather(1, action_batch)
 
-        next_state_values = torch.zeros(self.batch_size)
+        next_state_values = torch.zeros(len(memory_sample))
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
         # Compute the expected Q values
@@ -80,8 +83,11 @@ class DQN:
         if file_name_to_save_model is not None:
             start_learning_date_sample = file_name_to_save_model
         for i_episode in range(episodes):
+            if self.epsilon == self.epsilon_min and i_episode%5 == 0:
+                self.epsilon = 1.0
             print(" ")
             print(f'Learning episode {i_episode}/{episodes}')
+            print("episilon for episode:", self.epsilon)
             # Initialize the environment and get its state
             if i_episode != 0:
                 state = self.env.reset()
@@ -97,8 +103,13 @@ class DQN:
                     next_state = None
                 else:
                     next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
-
                 # Store the transition in memory
+                #! debugging
+                # if state is None or action is None or next_state is None or reward is None :
+                #     print(state)
+                #     print(action)
+                #     print(next_state, " for that next state observation:",)
+                #     print(reward)
                 self.memory.push(state, action, next_state, reward)
 
                 # Move to the next state
@@ -118,11 +129,13 @@ class DQN:
                 self.target_net.load_state_dict(target_net_state_dict)
 
                 if done:
+                    self.memory.finalizeTrace()
                     self.saveModel(verssioning=start_learning_date_sample,episode=i_episode)
                     run_history = self.env.getFullParametersHistory()
 
-                    self.plot_data_non_blocking(Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])
+                    self.plot_data_non_blocking(max_temperature=self.env.starting_temp,Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])#epsilon_hist)
                     break
+            
 
     def saveModel(self,verssioning,episode):
         eps_indicator = 1+int(episode/100)
@@ -157,15 +170,15 @@ class DQN:
         
 
 
-    def plot_data_non_blocking(self,Reward, Temperature, current_values, best_values):
-        print("plotting")
+    def plot_data_non_blocking(self,Reward,max_temperature, Temperature, current_values, best_values):
+        #print("plotting")
 
         if self.fig is None or self.axes is None:
             plt.ion()  # Enable interactive mode
             self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 7))
 
         # Clear previous plots to prevent overplotting
-        print(self.axes)
+        #print(self.axes)
         self.axes[0][0].cla()
         self.axes[0][1].cla()
         self.axes[1][0].cla()
@@ -178,20 +191,19 @@ class DQN:
 
         # Right plot
         self.axes[0][1].plot(Temperature, linestyle='-', color='r')
-        self.axes[0][1].set_title("Temperature Plot")
+        self.axes[0][1].set_title("Temperature Plot, maxT:" + str(max_temperature))
         #self.axes[1].set_xlabel("X-axis")
         #self.axes[1].set_ylabel("Y-axis")
 
         # Left plot
         self.axes[1][0].plot(current_values, linestyle='-', color='b')
-        self.axes[1][0].plot(best_values, linestyle='-', color='r')
-        self.axes[1][0].set_title("SA Values")
+        self.axes[1][0].set_title("SA Current Values")
         #self.axes[0].set_xlabel("X-axis")
         #self.axes[0].set_ylabel("Y-axis")
 
         # Left plot
-        self.axes[1][1].plot(Reward, linestyle='-', color='b')
-        self.axes[1][1].set_title("Reward Plot")
+        self.axes[1][1].plot(best_values, linestyle='-', color='b')
+        self.axes[1][1].set_title("SA Best values")
         #self.axes[0].set_xlabel("X-axis")
         #self.axes[0].set_ylabel("Y-axis")
 

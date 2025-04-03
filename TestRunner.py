@@ -8,8 +8,10 @@ import torch
 import SA
 
 DQN_eng = DQN()
-
-DQN_eng.run(1000)
+# print("starting evaluation")
+# DQN_eng.env.SA.problem.evaluate_tsp_files()
+print("starting learning")
+DQN_eng.run(episodes=2000)
 
 
 #Learning episode 42/100

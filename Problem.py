@@ -3,6 +3,7 @@ from typing import Any
 import random
 import os
 import tsplib95
+import networkx as nx
 
 class Problem(ABC):
     """Abstract base class for an optimization problem."""
@@ -31,15 +32,15 @@ class Problem(ABC):
         '''Should calculate (or at least aproximate) upperbound for given problem'''
         pass
 
-class VRP(Problem):
-    #its VRP with returns
+class TSP(Problem):
+    #its TSP with returns
     def __init__(self):
         # if distances is not None:
         #     self.distances = distances
         # else:
-        problem = tsplib95.load(self.choose_random_file('VRP_examle'))
+        problem = tsplib95.load(self.choose_random_file('TSP_examle'))
         while problem.dimension > 2000:
-            problem = tsplib95.load(self.choose_random_file('VRP_examle'))
+            problem = tsplib95.load(self.choose_random_file('TSP_examle'))
         print("choosed problem with dimention:",problem.dimension)
         self.graph = problem.get_graph(normalize=True)
         self.upperBound = None
@@ -88,18 +89,61 @@ class VRP(Problem):
         
         return os.path.join(folder_path, random.choice(files))
 
+    def evaluate_tsp_files(self,folder_path = 'TSP_examle'):
+        if not os.path.isdir(folder_path):
+            raise ValueError(f"Invalid directory: {folder_path}")
+        
+        files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+        
+        if not files:
+            raise FileNotFoundError("No files found in the given folder.")
+        
+
+        available_problems = 0
+        available_weak_problems = 0
+        all_problems = 0
+        for file in files:
+            all_problems+=1
+            path = os.path.join(folder_path, file)
+            problem = tsplib95.load(path)
+            if problem.dimension < 2000:
+                available_weak_problems+=1
+                G = problem.get_graph()
+
+                # Check connectivity
+                if isinstance(G, nx.DiGraph):
+                    is_connected = nx.is_strongly_connected(G)  # For directed graphs
+                else:
+                    is_connected = nx.is_connected(G)  # For undirected graphs
+                if is_connected :
+                    available_problems += 1
+        
+        print("there are:",all_problems," in folder and ",available_problems," are available, and", available_weak_problems - available_problems)
+            
+
+
+
     def getUpperBound(self):
         if self.upperBound is None:
-            upperBoundSolution = [0]
-            not_visited = [f for f in range(1,len(self.graph.nodes))]
-            while len(not_visited) > 0:
-                farthest_to_last = -1
-                dist_to_farthest = 0
-                for id in not_visited:
-                    if self.graph.edges[upperBoundSolution[-1],id]["weight"] > dist_to_farthest:
-                        farthest_to_last = id
-                        dist_to_farthest = self.graph.edges[upperBoundSolution[-1],id]["weight"]
-                upperBoundSolution.append(not_visited.pop(not_visited.index(farthest_to_last)))
-            self.upperBound = self.objective_function(upperBoundSolution)    
+            upperBound = 0
+            for i in range(len(self.graph.nodes)):
+                maxValue = 0
+                for j in range(len(self.graph.nodes)):
+                    if i != j and self.graph.edges[i,j]["weight"] > maxValue:
+                        maxValue = self.graph.edges[i,j]["weight"]
+                upperBound += maxValue
+            self.upperBound = upperBound
+            print("upperbound is:",self.upperBound)
+            # upperBoundSolution = [0]
+            # not_visited = [f for f in range(1,len(self.graph.nodes))]
+            # while len(not_visited) > 0:
+            #     farthest_to_last = -1
+            #     dist_to_farthest = 0
+            #     for id in not_visited:
+            #         if self.graph.edges[upperBoundSolution[-1],id]["weight"] > dist_to_farthest:
+            #             farthest_to_last = id
+            #             dist_to_farthest = self.graph.edges[upperBoundSolution[-1],id]["weight"]
+            #     upperBoundSolution.append(not_visited.pop(not_visited.index(farthest_to_last)))
+            # self.upperBound = self.objective_function(upperBoundSolution)    
         return self.upperBound
 
