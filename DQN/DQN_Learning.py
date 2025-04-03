@@ -18,19 +18,19 @@ if is_ipython:
 class DQN:
     
     def __init__(self ,load_model_path=None):
-        memory_samples_capacity = 100000
+        memory_samples_capacity = 200000
         max_steps_for_sa = 5000
         # for memory capacity we give how much transitions we want to store so there goes 
         self.memory = objs.ReplayMemory(int(memory_samples_capacity/max_steps_for_sa))
         self.gamma = 0.95    # discount rate
-        self.tau = 0.02    # target network replacment factor
+        self.tau = 0.05    # target network replacment factor
         self.env = DQN_SA.SA_env(max_steps=max_steps_for_sa)
-        self.batch_size = int(self.env.max_steps*1.5)
+        self.batch_size = int(self.env.max_steps*2.5)
         self.fig  = None
         self.axes = None
         
         self.epsilon = 1.0
-        self.epsilon_decay = 0.988
+        self.epsilon_decay = 0.995
         self.epsilon_min = 0.05
 
         self.policy_net = models.DQN_NN_V1(self.env.observation_space,self.env.action_space)
@@ -83,8 +83,6 @@ class DQN:
         if file_name_to_save_model is not None:
             start_learning_date_sample = file_name_to_save_model
         for i_episode in range(episodes):
-            if self.epsilon == self.epsilon_min and i_episode%5 == 0:
-                self.epsilon = 1.0
             print(" ")
             print(f'Learning episode {i_episode}/{episodes}')
             print("episilon for episode:", self.epsilon)
@@ -95,6 +93,9 @@ class DQN:
                 state = self.env.observation()
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
             for t in count():
+                if self.epsilon == self.epsilon_min and i_episode%4 == 0 and t == 2500:
+                    self.epsilon = 1.0
+
                 action = self.select_action(state)
                 observation, reward, done = self.env.step(action.item())
                 reward = torch.tensor([reward])
@@ -116,24 +117,25 @@ class DQN:
                 state = next_state
 
                 # Perform one step of the optimization (on the policy network)
-                learning_batch = self.sampleMemoryBatch()
-                if learning_batch != None:
-                    self.learnNetwork(learning_batch)
+                if t%4 == 0:
+                    learning_batch = self.sampleMemoryBatch()
+                    if learning_batch != None:
+                        self.learnNetwork(learning_batch)
 
-                # Soft update of the target network's weights
-                # θ′ ← τ θ + (1 −τ )θ′
-                target_net_state_dict = self.target_net.state_dict()
-                policy_net_state_dict = self.policy_net.state_dict()
-                for key in policy_net_state_dict:
-                    target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
-                self.target_net.load_state_dict(target_net_state_dict)
+                    # Soft update of the target network's weights
+                    # θ′ ← τ θ + (1 −τ )θ′
+                    target_net_state_dict = self.target_net.state_dict()
+                    policy_net_state_dict = self.policy_net.state_dict()
+                    for key in policy_net_state_dict:
+                        target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
+                    self.target_net.load_state_dict(target_net_state_dict)
 
                 if done:
                     self.memory.finalizeTrace()
                     self.saveModel(verssioning=start_learning_date_sample,episode=i_episode)
                     run_history = self.env.getFullParametersHistory()
 
-                    self.plot_data_non_blocking(max_temperature=self.env.starting_temp,Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])#epsilon_hist)
+                    self.plot_data_non_blocking(max_temperature=self.env.starting_temp,Temperature_normalized=[a[4] for a in run_history],Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])#epsilon_hist)
                     break
             
 
@@ -170,7 +172,7 @@ class DQN:
         
 
 
-    def plot_data_non_blocking(self,Reward,max_temperature, Temperature, current_values, best_values):
+    def plot_data_non_blocking(self,Reward,max_temperature, Temperature,Temperature_normalized, current_values, best_values):
         #print("plotting")
 
         if self.fig is None or self.axes is None:
@@ -197,13 +199,14 @@ class DQN:
 
         # Left plot
         self.axes[1][0].plot(current_values, linestyle='-', color='b')
-        self.axes[1][0].set_title("SA Current Values")
+        self.axes[1][0].plot(best_values, linestyle='-', color='r')
+        self.axes[1][0].set_title("SA Values")
         #self.axes[0].set_xlabel("X-axis")
         #self.axes[0].set_ylabel("Y-axis")
 
         # Left plot
-        self.axes[1][1].plot(best_values, linestyle='-', color='b')
-        self.axes[1][1].set_title("SA Best values")
+        self.axes[1][1].plot(Temperature_normalized, linestyle='-', color='b')
+        self.axes[1][1].set_title("Normalized Temperature Plot")
         #self.axes[0].set_xlabel("X-axis")
         #self.axes[0].set_ylabel("Y-axis")
 

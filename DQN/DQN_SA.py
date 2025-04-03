@@ -12,22 +12,25 @@ class SA_env:
         else:
             self.SA = SA.SA()
         self.max_temp_accepting_chance = 0.85
+        self.min_temp_accepting_chance = 0.001
         # elements that should change when SA is changed
         self.starting_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.max_temp_accepting_chance)
+        self.min_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.min_temp_accepting_chance)
         print("we have starting temp:",self.starting_temp)
+        print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
         
 
         # elements that shouldn't change when SA is changed
-        self.min_temp = 0.1
         self.actions = [float(f) * 0.01 for f in range(80,121,4)]
         self.no_reward_steps = int(max_steps * 0.01)
         print("there will be no reward for first steps:",self.no_reward_steps)
         self.max_steps = max_steps
         self.action_space = len(self.actions)
         self.run_history = []
-        self.observation_space = len(self.observation())
-        self.run_history.append([0 for _ in range(self.observation_space + 2)])
+        obs = self.observation()
+        self.observation_space = len(obs)
+        self.run_history.append(obs + [0,0])
         self.run_history[0][-2] = self.current_temp
         pass
 
@@ -37,9 +40,12 @@ class SA_env:
         else:
             self.SA = SA.SA()
         self.starting_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.max_temp_accepting_chance)
+        self.min_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.min_temp_accepting_chance)
         print("we have starting temp:",self.starting_temp)
+        print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
-        self.run_history = [[0 for _ in range(self.observation_space + 2)]]
+        obs = self.observation()
+        self.run_history = [obs + [0,0]]
         self.run_history[0][-2] = self.current_temp
         return self.observation()
 
@@ -81,7 +87,10 @@ class SA_env:
         if was_temp_lower_than_min:
             reward -= 10
         elif self.current_temp > self.starting_temp:
-            reward -= 2 * int(self.current_temp / self.starting_temp)
+            punishment = 5 * (int(self.current_temp / self.starting_temp)-1)
+            if punishment > 200:
+                punishment = 200
+            reward -= punishment # silna kara za każdą krotność przekroczenia temperatur
 
         #* kara za każde x kroków bez poprawy best_solution 
         steps_without_solution_correction = self.run_history[-1][3]
