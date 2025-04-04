@@ -7,7 +7,7 @@ import random
 import torch
 import SA
 
-DQN_eng = DQN()
+DQN_eng = DQN(load_model_path='DQN_policy_model_2025_04_04_00_35_eps200')
 # print("starting evaluation")
 # DQN_eng.env.SA.problem.evaluate_tsp_files()
 print("starting learning")

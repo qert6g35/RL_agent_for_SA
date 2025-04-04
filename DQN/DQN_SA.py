@@ -14,8 +14,8 @@ class SA_env:
         self.max_temp_accepting_chance = 0.85
         self.min_temp_accepting_chance = 0.001
         # elements that should change when SA is changed
-        self.starting_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.max_temp_accepting_chance)
-        self.min_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.min_temp_accepting_chance)
+        self.starting_temp = (self.SA.problem.getUpperBound()/3)/-math.log(self.max_temp_accepting_chance)
+        self.min_temp = (self.SA.problem.getUpperBound()/3)/-math.log(self.min_temp_accepting_chance)
         print("we have starting temp:",self.starting_temp)
         print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
