@@ -33,10 +33,10 @@ class DQN:
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.05
 
-        self.policy_net = models.DQN_NN_V1(self.env.observation_space,self.env.action_space)
+        self.policy_net = models.DuelingDQN_NN(self.env.observation_space,self.env.action_space)
         if load_model_path is not None:
             self.policy_net.load_state_dict(torch.load(load_model_path))
-        self.target_net = models.DQN_NN_V1(self.env.observation_space,self.env.action_space)
+        self.target_net = models.DuelingDQN_NN(self.env.observation_space,self.env.action_space)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=0.001)
         
@@ -73,8 +73,9 @@ class DQN:
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
-        # In-place gradient clipping
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        # gradien clipping jeżeli dalej będzie mi eksplodowało do dużych temp lub spadało instant do min to można tu coś pogrzebać nawet oba na raz
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
+        #torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
         
     def run(self, episodes, file_name_to_save_model:str = None):

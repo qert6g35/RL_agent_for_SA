@@ -4,6 +4,7 @@ import random
 import os
 import tsplib95
 import networkx as nx
+import numpy as np
 
 class Problem(ABC):
     """Abstract base class for an optimization problem."""
@@ -13,7 +14,7 @@ class Problem(ABC):
         """Evaluate the objective function at a given solution."""
         pass
 
-    def isFirstBetter(x,y):
+    def isFirstBetter(self,x,y):
         """Defines if x is better than y"""
         pass
 
@@ -28,9 +29,13 @@ class Problem(ABC):
         pass
     
     @abstractmethod
-    def getUpperBound() -> float:
+    def getUpperBound(self) -> float:
         '''Should calculate (or at least aproximate) upperbound for given problem'''
         pass
+
+    @abstractmethod
+    def EstimateDeltaEnergy(self,n):
+        '''Shold get n random inputs and output np.mean(x_value - x_neighbour_value,...)'''
 
 class TSP(Problem):
     #its TSP with returns
@@ -60,12 +65,12 @@ class TSP(Problem):
         while swap_place_a == swap_place_b:
             swap_place_b = random.randint(0,len(x)-1)
         # smart neighbour devinition 
-        # if swap_place_a > swap_place_b:
-        #     swap_place_a, swap_place_b = swap_place_b, swap_place_a
-        # return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
+        if swap_place_a > swap_place_b:
+            swap_place_a, swap_place_b = swap_place_b, swap_place_a
+        return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
         
         # dump neighbour devinition
-        x[swap_place_a],x[swap_place_b] = x[swap_place_b],x[swap_place_a]
+        #x[swap_place_a],x[swap_place_b] = x[swap_place_b],x[swap_place_a]
         return x
 
     
@@ -146,4 +151,12 @@ class TSP(Problem):
             #     upperBoundSolution.append(not_visited.pop(not_visited.index(farthest_to_last)))
             # self.upperBound = self.objective_function(upperBoundSolution)    
         return self.upperBound
+    
+    def EstimateDeltaEnergy(self,n):
+        deltas = []
+        for _ in range(n):
+            x = self.get_initial_solution()
+            x_value = self.objective_function(x)
+            deltas.append(abs(x_value - self.objective_function(self.get_random_neighbor(x))))
+        return np.mean(deltas)
 

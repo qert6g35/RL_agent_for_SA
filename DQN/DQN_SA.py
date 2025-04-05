@@ -2,6 +2,7 @@ import SA
 import math
 import Problem
 from itertools import count
+import torch
 
 #SA enviroment devined for DQN
 class SA_env:
@@ -13,9 +14,15 @@ class SA_env:
             self.SA = SA.SA()
         self.max_temp_accepting_chance = 0.85
         self.min_temp_accepting_chance = 0.001
-        # elements that should change when SA is changed
-        self.starting_temp = (self.SA.problem.getUpperBound()/3)/-math.log(self.max_temp_accepting_chance)
-        self.min_temp = (self.SA.problem.getUpperBound()/3)/-math.log(self.min_temp_accepting_chance)
+        # elements that should change when SA is 
+        deltaEnergy = self.SA.problem.EstimateDeltaEnergy(50)
+        if deltaEnergy <= 0:
+            deltaEnergy = self.SA.problem.EstimateDeltaEnergy(100)
+            if deltaEnergy <= 0:
+                print("Used upperbound for delta energy!!")
+                deltaEnergy = self.SA.problem.getUpperBound()/10
+        self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
+        self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
         print("we have starting temp:",self.starting_temp)
         print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
@@ -23,11 +30,13 @@ class SA_env:
 
         # elements that shouldn't change when SA is changed
         self.actions = [float(f) * 0.01 for f in range(80,121,4)]
-        self.no_reward_steps = int(max_steps * 0.01)
+        self.no_reward_steps = max(int(max_steps * 0.005),5)
         print("there will be no reward for first steps:",self.no_reward_steps)
         self.max_steps = max_steps
         self.action_space = len(self.actions)
         self.run_history = []
+        self.norm_reward_scale = 200.0
+
         obs = self.observation()
         self.observation_space = len(obs)
         self.run_history.append(obs + [0,0])
@@ -39,8 +48,14 @@ class SA_env:
             self.SA = SA.SA(preset_problem)
         else:
             self.SA = SA.SA()
-        self.starting_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.max_temp_accepting_chance)
-        self.min_temp = (self.SA.problem.getUpperBound()/4)/-math.log(self.min_temp_accepting_chance)
+        deltaEnergy = self.SA.problem.EstimateDeltaEnergy(50)
+        if deltaEnergy <= 0:
+            deltaEnergy = self.SA.problem.EstimateDeltaEnergy(100)
+            if deltaEnergy <= 0:
+                print("Used upperbound for delta energy!!")
+                deltaEnergy = self.SA.problem.getUpperBound()/10
+        self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
+        self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
         print("we have starting temp:",self.starting_temp)
         print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
@@ -74,9 +89,10 @@ class SA_env:
         # kara za temperaturę przekraczającą <temp_min,starting_temp*2>
 
         # nagroda za poprawę best value
-        reward = self.run_history[-1][1] - new_observation[1]
+        reward = 2*(self.run_history[-1][1] - new_observation[1])
         if reward < 0:
             reward = -reward
+
         #! uwaga tutaj najbardziej newraligncze miejsce dycutujące o tym jak wygląda nagroda
         reward = math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
         #* do X kroków nie oferujemy nagrody za poprawienie best value
@@ -88,10 +104,10 @@ class SA_env:
         #* kara za przekroczenie granic temperaturowych
         if was_temp_lower_than_min:
             reward -= 5.0
-        elif self.current_temp > self.starting_temp:
-            punishment = 2.0 * (int(teperature_factor)-1)
-            if punishment > 200:
-                punishment = 200
+        elif self.current_temp > self.starting_temp * 3:
+            punishment = 4.0 * (int(teperature_factor)-1)
+            if punishment > self.norm_reward_scale:
+                punishment = self.norm_reward_scale
             reward -= punishment # silna kara za każdą krotność przekroczenia temperatur
 
         #* kara za każde x kroków bez poprawy best_solution 
@@ -105,6 +121,10 @@ class SA_env:
                 reward -= (steps_without_solution_correction/self.max_steps*(10))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
         else:
             reward -= (steps_without_solution_correction/self.max_steps*10) # tej sytuacji nie chcemy dodatkowo obciążać bo i tak mamy karę za zbyt dużą temperaturę 
+
+        #! TO MOŻE NAM POMÓC Z OGARNIĘĆIEM WYBUCHAJĄCYCH WARTOŚCI PRZY STEROWANIU
+        # normalizacja nagrody
+        reward = max(min(reward,self.norm_reward_scale),-self.norm_reward_scale)/self.norm_reward_scale
 
         if self.SA.steps_done < self.max_steps:
             is_terminated = False
@@ -121,8 +141,8 @@ class SA_env:
     def getFullParametersHistory(self):
         return self.run_history
 
-    def observation(self,normalize = True,norm_reward_scale = 200.0):
-        normalize_factor = norm_reward_scale / self.SA.problem.getUpperBound()
+    def observation(self,normalize = True):
+        normalize_factor = self.norm_reward_scale / self.SA.problem.getUpperBound()
 
         # obs = [
         #     self.SA.current_solution_value, 
@@ -163,4 +183,31 @@ class SA_env:
         #a = input("TEST:")
         return steps_without_solution_correction
     
-    
+    def runTest(self,model,SA=None):
+        if SA is not None:
+            self.SA = SA
+        obs = self.observation()
+        self.run_history = []
+        for t in count():
+            #getting new temperature
+            with torch.no_grad():
+                actionNR = model(torch.tensor(obs, dtype=torch.float32))
+                if t%500 == 0:
+                    print(actionNR)
+                self.current_temp = self.current_temp * self.actions[actionNR.unsqueeze(0).max(1).indices.view(1, 1).item()]
+                if self.current_temp < self.min_temp:
+                    self.current_temp = self.min_temp
+            
+            #perform SA step
+            self.SA.step(self.current_temp)
+
+            #collecting data
+            self.run_history.append( obs + [self.current_temp,0])
+            obs = self.observation()
+
+            if self.SA.steps_done == self.max_steps:
+                break
+
+        transposed_run_history = list(map(list, zip(*self.run_history)))
+        unnormalize_factor =  self.SA.problem.getUpperBound() /self.norm_reward_scale 
+        return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],transposed_run_history[-3]  #best_values,current_values,temperature_values
