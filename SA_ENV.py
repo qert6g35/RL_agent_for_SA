@@ -3,11 +3,14 @@ import math
 import Problem
 from itertools import count
 import torch
+import gymnasium as gym
+import numpy as np
+from gymnasium.envs.registration import register
 
 #SA enviroment devined for DQN
-class SA_env:
+class SA_env(gym.Env):
 
-    def __init__(self,preset_problem = None,max_steps = 5000,count_reward = True):
+    def __init__(self,preset_problem = None,max_steps = 5000):
         if preset_problem != None:
             self.SA = SA.SA(preset_problem)
         else:
@@ -30,24 +33,32 @@ class SA_env:
 
         # elements that shouldn't change when SA is changed
         self.actions = [float(f) * 0.01 for f in range(80,121,4)]
+        self.action_space = gym.spaces.Discrete(len(self.actions))
         self.no_reward_steps = max(int(max_steps * 0.005),5)
         print("there will be no reward for first steps:",self.no_reward_steps)
         self.max_steps = max_steps
-        self.action_space = len(self.actions)
         self.run_history = []
         self.norm_reward_scale = 200.0
 
-        obs = self.observation()
-        self.observation_space = len(obs)
-        self.run_history.append(obs + [0,0])
+        low = np.array([0, 0, 0, 0, 0], dtype=np.float32)
+        high = np.array([1, 1, 1, 1, 100], dtype=np.float32) #! uwaga możliwe że trzeba będzie określić maksymalną temperaturę dla środowiska
+        self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
+
+        self.run_history.append(self.observation() + [0,0])
         self.run_history[0][-2] = self.current_temp
+
+        #extra elements
+        self.render_mode = None
+        self.window = None
+        self.clock = None
         pass
 
-    def reset(self,preset_problem = None):
-        if preset_problem != None:
-            self.SA = SA.SA(preset_problem)
-        else:
-            self.SA = SA.SA()
+    def reset(self,seed=None, options=None,preset_problem = None,initial_solution = None,reset_sa=True):
+        # We need the following line to seed self.np_random
+        super().reset(seed=seed)
+
+        if reset_sa:
+            self.SA.reset(preset_problem=preset_problem,initial_solution=initial_solution)
         deltaEnergy = self.SA.problem.EstimateDeltaEnergy(50)
         if deltaEnergy <= 0:
             deltaEnergy = self.SA.problem.EstimateDeltaEnergy(100)
@@ -62,7 +73,7 @@ class SA_env:
         obs = self.observation()
         self.run_history = [obs + [0,0]]
         self.run_history[0][-2] = self.current_temp
-        return self.observation()
+        return self.observation(), self.info() #!!! we pas none as info
 
     def step(self,action_number):
         was_temp_lower_than_min = False
@@ -70,6 +81,9 @@ class SA_env:
         if self.current_temp < self.min_temp:
             was_temp_lower_than_min = True
             self.current_temp = self.min_temp
+
+        if self.current_temp > self.starting_temp*10:
+            self.current_temp = self.starting_temp*10
 
         self.SA.step(self.current_temp)
         new_observation = self.observation()
@@ -105,7 +119,7 @@ class SA_env:
         if was_temp_lower_than_min:
             reward -= 5.0
         elif self.current_temp > self.starting_temp * 3:
-            punishment = 4.0 * (int(teperature_factor)-1)
+            punishment = 5.0 * (int(teperature_factor)-1)
             if punishment > self.norm_reward_scale:
                 punishment = self.norm_reward_scale
             reward -= punishment # silna kara za każdą krotność przekroczenia temperatur
@@ -116,9 +130,11 @@ class SA_env:
 
         if (teperature_factor <= 2):
             if (teperature_factor < 0.09):
-                reward -= (steps_without_solution_correction/self.max_steps*(10))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
+                reward -= (steps_without_solution_correction/self.max_steps*(15))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
             elif teperature_factor < 1:
-                reward -= (steps_without_solution_correction/self.max_steps*(10))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
+                reward -= (steps_without_solution_correction/self.max_steps*(15))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
+            elif steps_without_solution_correction > self.max_steps*0.02:
+                reward += max(15 - 30*(steps_without_solution_correction-self.max_steps*0.02)/self.max_steps,-1)  # NAGRADZAMY GO JAK PRUBUJE SZYKAĆ NOWYCH ROZWIĄZAŃ GDY DAWNO CZEGOS NIE ZNALEŹLIŚMY !!!!!!!
         else:
             reward -= (steps_without_solution_correction/self.max_steps*10) # tej sytuacji nie chcemy dodatkowo obciążać bo i tak mamy karę za zbyt dużą temperaturę 
 
@@ -135,11 +151,14 @@ class SA_env:
 
         self.run_history.append( new_observation + [self.current_temp,reward])
 
-        return new_observation, reward , is_terminated
+        return new_observation, reward , is_terminated, False, self.info()
 
     
     def getFullParametersHistory(self):
         return self.run_history
+
+    def info(self): # nie sądze by to było potzebne więc zostawiam pusty set 
+        return {}#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
 
     def observation(self,normalize = True):
         normalize_factor = self.norm_reward_scale / self.SA.problem.getUpperBound()
@@ -183,9 +202,7 @@ class SA_env:
         #a = input("TEST:")
         return steps_without_solution_correction
     
-    def runTest(self,model,SA=None):
-        if SA is not None:
-            self.SA = SA
+    def runTest(self,model):
         obs = self.observation()
         self.run_history = []
         for t in count():
@@ -197,6 +214,8 @@ class SA_env:
                 self.current_temp = self.current_temp * self.actions[actionNR.unsqueeze(0).max(1).indices.view(1, 1).item()]
                 if self.current_temp < self.min_temp:
                     self.current_temp = self.min_temp
+                if self.current_temp > self.starting_temp*10:
+                    self.current_temp = self.starting_temp*10
             
             #perform SA step
             self.SA.step(self.current_temp)
@@ -211,3 +230,9 @@ class SA_env:
         transposed_run_history = list(map(list, zip(*self.run_history)))
         unnormalize_factor =  self.SA.problem.getUpperBound() /self.norm_reward_scale 
         return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],transposed_run_history[-3]  #best_values,current_values,temperature_values
+
+    def render(self):
+        return super().render()
+    
+    def close(self):
+        return super().close()

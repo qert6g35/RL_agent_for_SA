@@ -62,15 +62,15 @@ class TSP(Problem):
     def get_random_neighbor(self, x: Any):
         swap_place_a = random.randint(0,len(x)-1)
         swap_place_b = random.randint(0,len(x)-1)
-        while swap_place_a == swap_place_b:
+        while swap_place_a == swap_place_b or swap_place_a+1 == swap_place_b or swap_place_a-1 == swap_place_b:
             swap_place_b = random.randint(0,len(x)-1)
         # smart neighbour devinition 
-        if swap_place_a > swap_place_b:
-            swap_place_a, swap_place_b = swap_place_b, swap_place_a
-        return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
+        #if swap_place_a > swap_place_b:
+        #    swap_place_a, swap_place_b = swap_place_b, swap_place_a
+        #return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
         
         # dump neighbour devinition
-        #x[swap_place_a],x[swap_place_b] = x[swap_place_b],x[swap_place_a]
+        x[swap_place_a],x[swap_place_b] = x[swap_place_b],x[swap_place_a]
         return x
 
     

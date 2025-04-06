@@ -1,14 +1,21 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 # The TUTORIAL neural network architecture
+
+def layer_init(layer,std = np.sqrt(2), bias_const = 0.0):
+    nn.init.orthogonal_(layer.weight,std)
+    nn.init.constant_(layer.bias,bias_const)
+    return layer
+
 
 class ResidualBlock(nn.Module):
     def __init__(self, size):
-        super().__init__()
+        super(ResidualBlock,self).__init__()
         self.block = nn.Sequential(
-            nn.Linear(size, size),
+            layer_init(nn.Linear(size, size)),
             nn.ReLU(),
-            nn.Linear(size, size)
+            layer_init(nn.Linear(size, size))
         )
 
     def forward(self, x):
@@ -16,9 +23,9 @@ class ResidualBlock(nn.Module):
 
 class DuelingDQN_NN(nn.Module):
     def __init__(self, obs_size, action_space):
-        super().__init__()
+        super(DuelingDQN_NN,self).__init__()
         self.feature = nn.Sequential(
-            nn.Linear(obs_size, 128),
+            layer_init(nn.Linear(obs_size, 128)),
             nn.ReLU()
         )
 
@@ -28,14 +35,14 @@ class DuelingDQN_NN(nn.Module):
         ]
         
         self.value = nn.Sequential(
-            nn.Linear(128, 64),
+            layer_init(nn.Linear(128, 64)),
             nn.ReLU(),
-            nn.Linear(64, 1)
+            layer_init(nn.Linear(64, 1),std=1)
         )
         self.advantage = nn.Sequential(
-            nn.Linear(128, 64),
+            layer_init(nn.Linear(128, 64)),
             nn.ReLU(),
-            nn.Linear(64, action_space)
+            layer_init(nn.Linear(64, action_space),std=0.01)
         )
 
     def forward(self, x):

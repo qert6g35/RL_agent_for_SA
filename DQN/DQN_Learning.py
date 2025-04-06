@@ -2,7 +2,7 @@ import DQN.DQN_Models as models
 import DQN.DQN_objs as objs
 import torch.nn as nn
 from numpy import amax
-import DQN.DQN_SA as DQN_SA
+import SA_ENV as SA_ENV
 import torch
 from datetime import datetime
 from itertools import count
@@ -10,6 +10,7 @@ import random
 import math
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 
 is_ipython = 'inline' in matplotlib.get_backend()
 if is_ipython:
@@ -19,13 +20,13 @@ class DQN:
     
     def __init__(self ,load_model_path=None):
         memory_samples_capacity = 200000
-        max_steps_for_sa = 5000
+        max_steps_for_sa = 10000
         # for memory capacity we give how much transitions we want to store so there goes 
         self.memory = objs.ReplayMemory(int(memory_samples_capacity/max_steps_for_sa))
         self.gamma = 0.95    # discount rate
         self.tau = 0.05    # target network replacment factor
-        self.env = DQN_SA.SA_env(max_steps=max_steps_for_sa)
-        self.batch_size = int(self.env.max_steps*2.5)
+        self.env = SA_ENV.SA_env(max_steps=max_steps_for_sa)
+        self.batch_size = int(self.env.max_steps*1.5)
         self.fig  = None
         self.axes = None
         
@@ -33,10 +34,13 @@ class DQN:
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.05
 
-        self.policy_net = models.DuelingDQN_NN(self.env.observation_space,self.env.action_space)
+        obs_space = int(np.array(self.env.observation_space.shape).prod())
+        action_sapce = int(self.env.action_space.n)
+        print(obs_space,action_sapce)
+        self.policy_net = models.DuelingDQN_NN(obs_space,action_sapce)
         if load_model_path is not None:
             self.policy_net.load_state_dict(torch.load(load_model_path))
-        self.target_net = models.DuelingDQN_NN(self.env.observation_space,self.env.action_space)
+        self.target_net = models.DuelingDQN_NN(obs_space,action_sapce)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=0.001)
         
@@ -89,16 +93,16 @@ class DQN:
             print("episilon for episode:", self.epsilon)
             # Initialize the environment and get its state
             if i_episode != 0:
-                state = self.env.reset()
+                state,_ = self.env.reset()
             else:
                 state = self.env.observation()
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
             for t in count():
-                if self.epsilon == self.epsilon_min and i_episode%4 == 0 and t == 2500:
+                if self.epsilon == self.epsilon_min and i_episode%3 == 0 and t == 2500:
                     self.epsilon = 1.0
 
                 action = self.select_action(state)
-                observation, reward, done = self.env.step(action.item())
+                observation, reward, done,_,_ = self.env.step(action.item())
                 reward = torch.tensor([reward])
 
                 if done:
@@ -118,7 +122,7 @@ class DQN:
                 state = next_state
 
                 # Perform one step of the optimization (on the policy network)
-                if t%4 == 0:
+                if t%10 == 0:
                     learning_batch = self.sampleMemoryBatch()
                     if learning_batch != None:
                         self.learnNetwork(learning_batch)
@@ -168,7 +172,7 @@ class DQN:
             with torch.no_grad():
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
-            return torch.tensor([[random.randrange(start=0,stop=self.env.action_space)]], dtype=torch.long)
+            return torch.tensor([[random.randrange(start=0,stop=self.env.action_space.n)]], dtype=torch.long)
             
         
 

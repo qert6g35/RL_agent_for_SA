@@ -6,6 +6,9 @@ from TempSheduler import TempSheduler
 
 class SA:
     def __init__(self, preset_problem:Problem.Problem = None, initial_solution = None):
+        self.reset(preset_problem,initial_solution)
+
+    def reset(self,preset_problem:Problem.Problem = None, initial_solution = None):
         #params
         self.steps_done = 0
         if preset_problem is not None:
