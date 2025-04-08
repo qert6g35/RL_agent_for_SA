@@ -106,6 +106,8 @@ class SA_env(gym.Env):
         reward = 2*(self.run_history[-1][1] - new_observation[1])
         if reward < 0:
             reward = -reward
+        if reward != 0 and self.SA.steps_done > self.max_steps*0.02:
+            reward += max(10.0, math.log(self.SA.steps_done) * 5.0) # dodanie pewnej minimalnej nagrody za poprawę 
 
         #! uwaga tutaj najbardziej newraligncze miejsce dycutujące o tym jak wygląda nagroda
         reward = math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
