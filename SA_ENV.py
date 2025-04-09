@@ -132,9 +132,9 @@ class SA_env(gym.Env):
 
         if (teperature_factor <= 2):
             if (teperature_factor < 0.09):
-                reward -= (steps_without_solution_correction/self.max_steps*(15))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
+                reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
             elif teperature_factor < 1:
-                reward -= (steps_without_solution_correction/self.max_steps*(15))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
+                reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
             elif steps_without_solution_correction > self.max_steps*0.02:
                 reward += max(15 - 30*(steps_without_solution_correction-self.max_steps*0.02)/self.max_steps,-1)  # NAGRADZAMY GO JAK PRUBUJE SZYKAĆ NOWYCH ROZWIĄZAŃ GDY DAWNO CZEGOS NIE ZNALEŹLIŚMY !!!!!!!
         else:

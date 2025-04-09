@@ -52,7 +52,7 @@ class TSP(Problem):
         super().__init__()
 
     def objective_function(self, x: Any) -> float:
-        return sum([self.graph.edges[x[0],x[1]]["weight"] for i in range(len(x))])
+        return sum([self.graph.edges[x[len(x)-1],x[0]]["weight"]]+[self.graph.edges[x[i],x[i+1]]["weight"] for i in range(len(x)-1)])
     
     def get_initial_solution(self):
         initial_solution = [f for f in range(len(self.graph.nodes))]
