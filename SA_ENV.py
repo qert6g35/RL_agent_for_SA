@@ -10,32 +10,14 @@ from gymnasium.envs.registration import register
 #SA enviroment devined for DQN
 class SA_env(gym.Env):
 
-    def __init__(self,preset_problem = None,max_steps = 5000):
-        if preset_problem != None:
-            self.SA = SA.SA(preset_problem)
-        else:
-            self.SA = SA.SA()
+    def __init__(self,preset_problem = None,max_steps = 5000,set_up_learning_on_init = False):
+        # elements that shouldn't change when SA is changed
         self.max_temp_accepting_chance = 0.85
         self.min_temp_accepting_chance = 0.001
-        # elements that should change when SA is 
-        deltaEnergy = self.SA.problem.EstimateDeltaEnergy(50)
-        if deltaEnergy <= 0:
-            deltaEnergy = self.SA.problem.EstimateDeltaEnergy(100)
-            if deltaEnergy <= 0:
-                print("Used upperbound for delta energy!!")
-                deltaEnergy = self.SA.problem.getUpperBound()/10
-        self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
-        self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
-        print("we have starting temp:",self.starting_temp)
-        print("we have min temp:",self.min_temp)
-        self.current_temp = self.starting_temp
-        
-
-        # elements that shouldn't change when SA is changed
         self.actions = [float(f) * 0.01 for f in range(80,121,4)]
         self.action_space = gym.spaces.Discrete(len(self.actions))
         self.no_reward_steps = max(int(max_steps * 0.005),5)
-        print("there will be no reward for first steps:",self.no_reward_steps)
+        #print("there will be no reward for first steps:",self.no_reward_steps)
         self.max_steps = max_steps
         self.run_history = []
         self.norm_reward_scale = 200.0
@@ -44,20 +26,43 @@ class SA_env(gym.Env):
         high = np.array([1, 1, 1, 1, 100], dtype=np.float32) #! uwaga możliwe że trzeba będzie określić maksymalną temperaturę dla środowiska
         self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
 
-        self.run_history.append(self.observation() + [0,0])
-        self.run_history[0][-2] = self.current_temp
-
         #extra elements
         self.render_mode = None
         self.window = None
         self.clock = None
+        
+        if set_up_learning_on_init:
+            if preset_problem != None:
+                self.SA = SA.SA(preset_problem)
+            else:
+                self.SA = SA.SA()
+            # elements that should change when SA is 
+            deltaEnergy = self.SA.problem.EstimateDeltaEnergy(50)
+            if deltaEnergy <= 0:
+                deltaEnergy = self.SA.problem.EstimateDeltaEnergy(100)
+                if deltaEnergy <= 0:
+                    print("Used upperbound for delta energy!!")
+                    deltaEnergy = self.SA.problem.getUpperBound()/10
+            self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
+            self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
+            #print("we have starting temp:",self.starting_temp)
+            #print("we have min temp:",self.min_temp)
+            self.current_temp = self.starting_temp
+            self.run_history.append(self.observation() + [0,0])
+            self.run_history[0][-2] = self.current_temp
+        else:
+            self.SA = None
+            self.starting_temp = 0.0
+            self.min_temp = 0.0
+            self.current_temp = self.starting_temp
         pass
 
     def reset(self,seed=None, options=None,preset_problem = None,initial_solution = None,reset_sa=True):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
-
-        if reset_sa:
+        if self.SA == None:
+            self.SA = SA.SA(preset_problem=preset_problem,initial_solution=initial_solution)
+        elif reset_sa:
             self.SA.reset(preset_problem=preset_problem,initial_solution=initial_solution)
         deltaEnergy = self.SA.problem.EstimateDeltaEnergy(50)
         if deltaEnergy <= 0:
@@ -67,8 +72,8 @@ class SA_env(gym.Env):
                 deltaEnergy = self.SA.problem.getUpperBound()/10
         self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
         self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
-        print("we have starting temp:",self.starting_temp)
-        print("we have min temp:",self.min_temp)
+        #print("we have starting temp:",self.starting_temp)
+        #print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
         obs = self.observation()
         self.run_history = [obs + [0,0]]

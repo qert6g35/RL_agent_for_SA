@@ -7,6 +7,8 @@ import TempSheduler
 import matplotlib.pyplot as plt
 import SA
 import torch
+from collections import Counter
+
 
 def plot_SA_output(lbest_values_list,lcurrent_values_list,ltemp_values_list,dbest_values_list,dcurrent_values_list,dtemp_values_list):
         # Creating subplots
@@ -80,43 +82,92 @@ def TestGivenTempSheduler(TSM):
     
     return best_values_list,current_values_list,temp_values_list
 
-NUM_TESTS = 2
+
+def make_compareing_test(NUM_TESTS):
+
+    test_result = {}
+
+    def collect_run_result(run_result,problem_dimention:int):
+        '''
+            Dla wskazanego rozmiaru problemu, podajemy listy danych:
+            0 - nazwa użytego alg temperaturowego
+            1 - osiągnięta wartość najleprzego wyniku
+            2 - Liczba iteracji potrzebna do uzyskania tego wyniku
+        '''
+        refactored_result = []
+        for key in run_result:
+            refactored_result.append([
+                key,
+                run_result[key][0][-1],
+                len(run_result[key][0]) - len(Counter(run_result[key][0])[run_result[key][0][-1]])
+                ])
+        try:
+            test_result[problem_dimention].append(run_result)
+        except:
+            test_result[problem_dimention] = [run_result]
+
+    DQN_SA_engine = SA_ENV.SA_env()
+    # DQN_model = DuelingDQN_NN()
+
+    DQN_nn = DQN_NN_V1(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    DQN_nn.load_state_dict(torch.load('NN_Models/DQN/V1/B/ekplodujące_zanikające_wartości/DQN_policy_model_DQN_V1_B_ok_300_500_eps'))
+
+    LinerSA = SA.SA()
+    LinearTS = TempSheduler.LinearTempSheduler(0.0,0.0,0.0)
 
 
+    for i in range(NUM_TESTS):
+        new_problem = Problem.TSP()
+        initial_solution = new_problem.get_initial_solution()
 
-DQN_SA_engine = SA_ENV.SA_env()
-# DQN_model = DuelingDQN_NN()
+        DQN_SA_engine.reset(preset_problem=new_problem,initial_solution=initial_solution)
+        LinerSA.reset(preset_problem=new_problem,initial_solution=initial_solution)
 
-DQN_nn = DQN_NN_V1(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
-DQN_nn.load_state_dict(torch.load('NN_Models/DQN/V1/B/ekplodujące_zanikające_wartości/DQN_policy_model_DQN_V1_B_ok_300_500_eps'))
+        LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
 
-LinerSA = SA.SA()
+        run_results = {}
 
-for i in range(NUM_TESTS):
-    new_problem = Problem.TSP()
-    initial_solution = new_problem.get_initial_solution()
+        linear_BV,linear_CV,linear_TV = LinerSA.run(max_steps=DQN_SA_engine.max_steps, 
+                                    temp_shadeuling_model=LinearTS,
+                                    collect_best_values=True,
+                                    collect_current_values=True,
+                                    collect_temperature_shadule=True)
+        
+        run_results += {"linear":[linear_BV,linear_CV,linear_TV]}
+        
+        DQN_BV,DQN_CV,DQN_TV = DQN_SA_engine.runTest(model=DQN_nn)
 
-    DQN_SA_engine.reset(preset_problem=new_problem,initial_solution=initial_solution)
-    LinerSA.reset(preset_problem=new_problem,initial_solution=initial_solution)
+        run_results += {"DQN_V1_B":[DQN_BV,DQN_CV,DQN_TV]}
 
-    LinearTS = TempSheduler.LinearTempSheduler(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
+        plot_SA_output(linear_BV,linear_CV,linear_TV,DQN_BV,DQN_CV,DQN_TV)
 
-    linear_BV,linear_CV,linear_TV = LinerSA.run(max_steps=DQN_SA_engine.max_steps, 
-                                temp_shadeuling_model=LinearTS,
-                                collect_best_values=True,
-                                collect_current_values=True,
-                                collect_temperature_shadule=True)
-    
-    DQN_BV,DQN_CV,DQN_TV = DQN_SA_engine.runTest(model=DQN_nn)
+        collect_run_result(run_results,new_problem.getDimention())
 
-    plot_SA_output(linear_BV,linear_CV,linear_TV,DQN_BV,DQN_CV,DQN_TV)
 
-# DQN_nn = DQN_NN_V1(DQN_SA_engine.observation_space,DQN_SA_engine.action_space)
-# DQN_nn.load_state_dict(torch.load('NN_Models/V1/B/DQN_policy_model_DQN_V1_B_ok_300_500_eps'))
-# print("start runTest")
-# best_values_list,current_values_list,temp_values_list = DQN_SA_engine.runTest(model=DQN_nn)
-# print("finalised test")
+# ✅ 1. Jakość uzyskanego rozwiązania (wartość funkcji celu)
+# Podstawowe kryterium.
 
-# plot_SA_output(best_values_list,current_values_list,temp_values_list)
+# Sprawdzasz, jakie najlepsze rozwiązanie udało się osiągnąć przy danym schemacie chłodzenia.
+
+# Im niższa wartość funkcji celu (dla problemów minimalizacji), tym lepiej.
+
+# ✅ 2. Stabilność wyników (odchylenie standardowe / wariancja)
+# Dobrze, jeśli dany schemat regularnie daje dobre wyniki, nie tylko "raz się udało".
+
+# Powtarzasz eksperymenty wielokrotnie (np. 30 razy) i analizujesz rozrzut wyników.
+
+# Schemat o niższej wariancji jest bardziej niezawodny.
+
+# ✅ 3. Czas obliczeń (czas działania algorytmu)
+# Czy dany schemat osiąga dobre wyniki szybko?
+
+# Warto analizować czas do osiągnięcia najlepszego wyniku lub całkowity czas działania.
+
+# W niektórych zastosowaniach czas ma większe znaczenie niż optymalność.
+
+# ✅ 4. Liczba iteracji do najlepszego rozwiązania
+# Ile kroków było potrzebne, żeby znaleźć najlepsze rozwiązanie?
+
+# Schemat, który szybciej dochodzi do optimum, może być lepszy w praktycznych zastosowaniach.
 
 

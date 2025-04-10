@@ -22,15 +22,18 @@ class LinearTempSheduler(TempSheduler):
     '''
 
     def __init__(self,start_temp:float,end_temp:float,end_steps:int):
+        self.reset(start_temp = start_temp,end_steps=end_steps,end_temp=end_temp)
+
+    def getTemp(self,*args):# tutaj podajemy tylko jeden agrument, który to jekt krok aglorytmu
+        if args[0] >= self.end_steps:
+            return self.end_temp
+        return self.start_temp - self.temp_diff * args[0]
+    
+    def reset(self,start_temp:float,end_temp:float,end_steps:int):
         self.start_temp = start_temp
         self.end_steps = end_steps
         self.end_temp = end_temp
         self.temp_diff = (start_temp - end_temp) / end_steps
-
-    def getTemp(self,*args):
-        if args[0] >= self.end_steps:
-            return self.end_temp
-        return self.start_temp - self.temp_diff * args[0]
     
 class ConstTempSheduler(TempSheduler):
     ''' Linear temperature sheduler

@@ -36,6 +36,11 @@ class Problem(ABC):
     @abstractmethod
     def EstimateDeltaEnergy(self,n):
         '''Shold get n random inputs and output np.mean(x_value - x_neighbour_value,...)'''
+        pass
+
+    @abstractmethod
+    def getDimention(self):
+        pass
 
 class TSP(Problem):
     #its TSP with returns
@@ -47,6 +52,7 @@ class TSP(Problem):
         while problem.dimension > 2000:
             problem = tsplib95.load(self.choose_random_file('TSP_examle'))
         print("choosed problem with dimention:",problem.dimension)
+        self.dim = problem.dimension
         self.graph = problem.get_graph(normalize=True)
         self.upperBound = None
         super().__init__()
@@ -159,4 +165,7 @@ class TSP(Problem):
             x_value = self.objective_function(x)
             deltas.append(abs(x_value - self.objective_function(self.get_random_neighbor(x))))
         return np.mean(deltas)
+
+    def getDimention(self):
+        return self.dim
 

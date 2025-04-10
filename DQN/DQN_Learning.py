@@ -9,12 +9,12 @@ from itertools import count
 import random
 import math
 import matplotlib
+matplotlib.use('TkAgg')  # Force TkAgg backend
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
-is_ipython = 'inline' in matplotlib.get_backend()
-if is_ipython:
-    from IPython import display
+#matplotlib.use('Qt5Agg')
 
 class DQN:
     
@@ -92,17 +92,14 @@ class DQN:
             print(f'Learning episode {i_episode}/{episodes}')
             print("episilon for episode:", self.epsilon)
             # Initialize the environment and get its state
-            if i_episode != 0:
-                state,_ = self.env.reset()
-            else:
-                state = self.env.observation()
+            state,_ = self.env.reset()
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
             for t in count():
                 if self.epsilon == self.epsilon_min and i_episode%3 == 0 and t == 2500:
                     self.epsilon = 1.0
 
                 action = self.select_action(state)
-                observation, reward, done,_,_ = self.env.step(action.item())
+                observation, reward, done,_,_= self.env.step(action.item())
                 reward = torch.tensor([reward])
 
                 if done:
@@ -140,7 +137,8 @@ class DQN:
                     self.saveModel(verssioning=start_learning_date_sample,episode=i_episode)
                     run_history = self.env.getFullParametersHistory()
 
-                    self.plot_data_non_blocking(max_temperature=self.env.starting_temp,Temperature_normalized=[a[4] for a in run_history],Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])#epsilon_hist)
+                    #self.plot_data_non_blocking(max_temperature=self.env.starting_temp,Temperature_normalized=[a[4] for a in run_history],Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])#epsilon_hist)
+                    #time.sleep(1)
                     break
             
 
@@ -178,47 +176,38 @@ class DQN:
 
 
     def plot_data_non_blocking(self,Reward,max_temperature, Temperature,Temperature_normalized, current_values, best_values):
-        #print("plotting")
-
         if self.fig is None or self.axes is None:
-            plt.ion()  # Enable interactive mode
+            plt.ion()  # Only call plt.ion() once when first creating the plot
+            self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 7))
+        else:
+            if plt.fignum_exists(self.fig.number):  # Check if the previous plot is still open
+                plt.close(self.fig)
             self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 7))
 
-        # Clear previous plots to prevent overplotting
-        #print(self.axes)
-        self.axes[0][0].cla()
-        self.axes[0][1].cla()
-        self.axes[1][0].cla()
-        self.axes[1][1].cla()
-        # Left plot
+        # Clear axes before replotting
+        for row in self.axes:
+            for ax in row:
+                ax.cla()
+
         self.axes[0][0].plot(Reward, linestyle='-', color='b')
         self.axes[0][0].set_title("Reward Plot")
-        #self.axes[0].set_xlabel("X-axis")
-        #self.axes[0].set_ylabel("Y-axis")
 
-        # Right plot
         self.axes[0][1].plot(Temperature, linestyle='-', color='r')
-        self.axes[0][1].set_title("Temperature Plot, maxT:" + str(max_temperature))
-        #self.axes[1].set_xlabel("X-axis")
-        #self.axes[1].set_ylabel("Y-axis")
+        self.axes[0][1].set_title(f"Temperature Plot, maxT: {max_temperature}")
 
-        # Left plot
-        self.axes[1][0].plot(current_values, linestyle='-', color='b')
-        self.axes[1][0].plot(best_values, linestyle='-', color='r')
+        self.axes[1][0].plot(current_values, linestyle='-', color='b', label="Current")
+        self.axes[1][0].plot(best_values, linestyle='-', color='r', label="Best")
         self.axes[1][0].set_title("SA Values")
-        #self.axes[0].set_xlabel("X-axis")
-        #self.axes[0].set_ylabel("Y-axis")
+        self.axes[1][0].legend()
 
-        # Left plot
         self.axes[1][1].plot(Temperature_normalized, linestyle='-', color='b')
         self.axes[1][1].set_title("Normalized Temperature Plot")
-        #self.axes[0].set_xlabel("X-axis")
-        #self.axes[0].set_ylabel("Y-axis")
 
-        # Force update of the figure
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-        plt.pause(0.001)  # Short pause to allow GUI event loop to update
+        plt.pause(0.001)  # Allow the GUI to update — doesn't block
+        plt.show(block=False)
+
 
 
 
