@@ -55,6 +55,7 @@ class TSP(Problem):
         self.dim = problem.dimension
         self.graph = problem.get_graph(normalize=True)
         self.upperBound = None
+        self.use_smart_neighbour = True
         super().__init__()
 
     def objective_function(self, x: Any) -> float:
@@ -66,16 +67,21 @@ class TSP(Problem):
         return initial_solution
     
     def get_random_neighbor(self, x: Any):
-        swap_place_a = random.randint(0,len(x)-1)
-        swap_place_b = random.randint(0,len(x)-1)
+        swap_place_a = random.randint(0,len(x))
+        swap_place_b = random.randint(0,len(x))
         while swap_place_a == swap_place_b or swap_place_a+1 == swap_place_b or swap_place_a-1 == swap_place_b:
-            swap_place_b = random.randint(0,len(x)-1)
+            swap_place_b = random.randint(0,len(x))
         # smart neighbour devinition 
-        #if swap_place_a > swap_place_b:
-        #    swap_place_a, swap_place_b = swap_place_b, swap_place_a
-        #return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
+        if self.use_smart_neighbour:
+            if swap_place_a > swap_place_b:
+                swap_place_a, swap_place_b = swap_place_b, swap_place_a
+            return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
         
         # dump neighbour devinition
+        if swap_place_a >= len(x):
+            swap_place_a -=1
+        if swap_place_b >= len(x):
+            swap_place_b -=1
         x[swap_place_a],x[swap_place_b] = x[swap_place_b],x[swap_place_a]
         return x
 

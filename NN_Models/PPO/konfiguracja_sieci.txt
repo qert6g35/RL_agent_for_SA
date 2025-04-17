@@ -1,0 +1,1 @@
+A: Środowisko oraz we/wy jak i nagroda są takie same jak w przypadku DuelingDQN wesja D.

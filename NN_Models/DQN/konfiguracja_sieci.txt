@@ -153,3 +153,10 @@ Nagroda:
         reward = max(min(reward,self.norm_reward_scale),-self.norm_reward_scale)/self.norm_reward_scale
 
 
+
+
+E: zmiany od D to dodanie lr anneling i zwiększenie lr, do tego zmiany w rzadszym uczeniu z nieco większą ilością danych
+
+konfiguracje we/wy jak w B
+
+obliczamy nagrodę tak jak w D

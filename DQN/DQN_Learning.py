@@ -12,25 +12,29 @@ import matplotlib
 matplotlib.use('TkAgg')  # Force TkAgg backend
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+from torch.utils.tensorboard import SummaryWriter
 import time
 
 #matplotlib.use('Qt5Agg')
 
 class DQN:
     
-    def __init__(self ,load_model_path=None):
-        memory_samples_capacity = 200000
+    def __init__(self ,load_model_path=None,save_model_offset = 0):
+        self.model_offset = save_model_offset
+        memory_samples_capacity = 500000
         max_steps_for_sa = 10000
         # for memory capacity we give how much transitions we want to store so there goes 
         self.memory = objs.ReplayMemory(int(memory_samples_capacity/max_steps_for_sa))
         self.gamma = 0.95    # discount rate
         self.tau = 0.05    # target network replacment factor
         self.env = SA_ENV.SA_env(max_steps=max_steps_for_sa)
-        self.batch_size = int(self.env.max_steps*1.5)
+        self.batch_size = int(self.env.max_steps*2)
         self.fig  = None
         self.axes = None
-        
+    
         self.epsilon = 1.0
+        
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.05
 
@@ -42,11 +46,15 @@ class DQN:
             self.policy_net.load_state_dict(torch.load(load_model_path))
         self.target_net = models.DuelingDQN_NN(obs_space,action_sapce)
         self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=0.001)
+
+        self.starting_lr = 0.002
+        self.lr_anneling = "cosine"
+        self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=self.starting_lr)
         
 
 
-    def learnNetwork(self, memory_sample): #works for any size of batch
+    def learnNetwork(self): #works for any size of batch
+        memory_sample = self.memory.sample(batch_size=self.batch_size)
         batch = objs.Transition(*zip(*memory_sample))
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                             batch.next_state)), dtype=torch.bool)
@@ -81,26 +89,32 @@ class DQN:
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         #torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
+        return loss
         
     def run(self, episodes, file_name_to_save_model:str = None):
         start_learning_date_sample = datetime.today().strftime('%Y_%m_%d_%H_%M')
+        start_time = time.time()
         print(f'Started learning {start_learning_date_sample}')
+        writer = SummaryWriter(f"runs/DQN_NN_"+start_learning_date_sample)
         if file_name_to_save_model is not None:
             start_learning_date_sample = file_name_to_save_model
+        learning_step = 0
         for i_episode in range(episodes):
             print(" ")
             print(f'Learning episode {i_episode}/{episodes}')
             print("episilon for episode:", self.epsilon)
+            print("learning rate for episode:",self.optimizer.param_groups[0]["lr"])
             # Initialize the environment and get its state
             state,_ = self.env.reset()
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+
             for t in count():
                 if self.epsilon == self.epsilon_min and i_episode%3 == 0 and t == 2500:
                     self.epsilon = 1.0
 
                 action = self.select_action(state)
                 observation, reward, done,_,_= self.env.step(action.item())
-                reward = torch.tensor([reward])
+                reward = torch.tensor([reward], dtype=torch.float32)
 
                 if done:
                     next_state = None
@@ -119,37 +133,69 @@ class DQN:
                 state = next_state
 
                 # Perform one step of the optimization (on the policy network)
-                if t%10 == 0:
-                    learning_batch = self.sampleMemoryBatch()
-                    if learning_batch != None:
-                        self.learnNetwork(learning_batch)
+                if t%50 == 0:
+                     # dodje powolne zmniejszanie lr
+                    if self.lr_anneling == "linear":
+                        updated_lr = self.starting_lr * (1.0 - ((i_episode * self.env.max_steps + t) - 1.0)/(episodes * self.env.max_steps))
+                    elif self.lr_anneling == "cosine":
+                        progress = (i_episode * self.env.max_steps + t - 1.0) / (episodes * self.env.max_steps)
+                        cosine_decay = 0.5 * (1 + math.cos(math.pi * progress))
+                        updated_lr = self.starting_lr * cosine_decay 
+                    else:
+                        updated_lr = self.starting_lr  
+                    self.optimizer.param_groups[0]["lr"] = max(updated_lr,0.000001)
 
+                    if self.batch_size <= len(self.memory):
+                        loss = self.learnNetwork()
+                    else:
+                        loss = None
                     # Soft update of the target network's weights
                     # θ′ ← τ θ + (1 −τ )θ′
+
+                                # TRY NOT TO MODIFY: record rewards for plotting purposes
+                    if t%200 == 0:
+                        writer.add_scalar("charts/learning_rate", self.optimizer.param_groups[0]["lr"], learning_step)
+                        if loss != None:
+                            writer.add_scalar("losses/value_loss", loss.item(), learning_step)
+                        else:
+                            writer.add_scalar("losses/value_loss", 0, learning_step)
+                        # writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
+                        # writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
+                        # writer.add_scalar("losses/old_approx_kl", old_approx_kl.item(), global_step)
+                        # writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
+                        # writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
+                        # writer.add_scalar("losses/explained_variance", explained_var, global_step)
+                        if t%1000 == 0:
+                            print("LSPS:", int(learning_step / (time.time() - start_time)))
+                        writer.add_scalar("charts/LSPS", int(learning_step / (time.time() - start_time)), learning_step)
+
                     target_net_state_dict = self.target_net.state_dict()
                     policy_net_state_dict = self.policy_net.state_dict()
                     for key in policy_net_state_dict:
                         target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
                     self.target_net.load_state_dict(target_net_state_dict)
+                    learning_step+=1
 
                 if done:
                     self.memory.finalizeTrace()
-                    self.saveModel(verssioning=start_learning_date_sample,episode=i_episode)
-                    run_history = self.env.getFullParametersHistory()
+                    self.saveModel(verssioning=start_learning_date_sample,eps=i_episode)
+                    #run_history = self.env.getFullParametersHistory()
 
                     #self.plot_data_non_blocking(max_temperature=self.env.starting_temp,Temperature_normalized=[a[4] for a in run_history],Temperature=[a[-2] for a in run_history],Reward=[a[-1] for a in run_history],current_values=[a[0] for a in run_history],best_values=[a[1] for a in run_history])#epsilon_hist)
                     #time.sleep(1)
                     break
             
 
-    def saveModel(self,verssioning,episode):
-        eps_indicator = 1+int(episode/100)
-        torch.save(self.policy_net.state_dict(), "DQN_policy_model_"+verssioning+"_eps"+str(eps_indicator)+"00")
+    def saveModel(self,verssioning,eps):
+        episode = eps + self.model_offset
+        torch.save(self.policy_net.state_dict(), "DQN_NN_"+verssioning+"_eps"+str(episode))
+        if os.path.exists("DQN_NN_"+verssioning+"_eps"+str(episode-1)) and (eps%101 != 0 or eps == 0 or eps == 1):
+            os.remove("DQN_NN_"+verssioning+"_eps"+str(episode-1))
 
-    def sampleMemoryBatch(self):
-        if self.batch_size <= len(self.memory):
-            return self.memory.sample(batch_size=self.batch_size)
-        return None
+    # def sampleMemoryBatch(self):
+    #     if self.batch_size <= len(self.memory):
+    #         return self.memory.sample(batch_size=self.batch_size)
+    #     return None
 
 
     def select_action(self, state)->torch.Tensor:
@@ -167,10 +213,13 @@ class DQN:
         #     return torch.tensor([self.env.actions[random.randrange(start=0,stop=self.env.action_space)]], dtype=torch.float)
 
         if random.random() < self.epsilon:
+            self.policy_net.eval()
             with torch.no_grad():
-                return self.policy_net(state).max(1).indices.view(1, 1)
+                action = self.policy_net(state).max(1).indices.view(1, 1)
+            self.policy_net.train()
         else:
-            return torch.tensor([[random.randrange(start=0,stop=self.env.action_space.n)]], dtype=torch.long)
+            action = torch.tensor([[random.randrange(start=0,stop=self.env.action_space.n)]], dtype=torch.long)
+        return action
             
         
 
