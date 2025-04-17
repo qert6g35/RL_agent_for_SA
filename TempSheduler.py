@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+import math
 class TempSheduler(ABC):
     """Abstract base class for an time sheduler module."""
     
