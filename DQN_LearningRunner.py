@@ -1,11 +1,11 @@
 from DQN.DQN_Learning import DQN
 
 
-DQN_eng = DQN(load_model_path="NN_Models\DQN\DuelingDQN\E\SMART_TSP\DQN_NN_2025_04_16_02_15_eps499",save_model_offset=500)
+DQN_eng = DQN()
 # print("starting evaluation")
 # DQN_eng.env.SA.problem.evaluate_tsp_files()
 print("starting learning")
-DQN_eng.run(episodes=500)
+DQN_eng.run()
 
 
 #Learning episode 42/100

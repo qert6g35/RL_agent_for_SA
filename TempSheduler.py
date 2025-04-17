@@ -10,7 +10,7 @@ class TempSheduler(ABC):
         return:float - temperature for given step
     '''
     @abstractmethod 
-    def getTemp(self,*args)->float:
+    def getTemp(self,step)->float:
         pass
 
 class LinearTempSheduler(TempSheduler):
@@ -24,10 +24,10 @@ class LinearTempSheduler(TempSheduler):
     def __init__(self,start_temp:float,end_temp:float,end_steps:int):
         self.reset(start_temp = start_temp,end_steps=end_steps,end_temp=end_temp)
 
-    def getTemp(self,*args):# tutaj podajemy tylko jeden agrument, który to jekt krok aglorytmu
-        if args[0] >= self.end_steps:
+    def getTemp(self,step):# tutaj podajemy tylko jeden agrument, który to jekt krok aglorytmu
+        if step >= self.end_steps:
             return self.end_temp
-        return self.start_temp - self.temp_diff * args[0]
+        return self.start_temp - self.temp_diff * step
     
     def reset(self,start_temp:float,end_temp:float,end_steps:int):
         self.start_temp = start_temp
@@ -51,3 +51,64 @@ class ConstTempSheduler(TempSheduler):
 
     def getTemp(self, *args):
         return self.const_temp
+    
+class GeometricTempSheduler(TempSheduler):
+    '''
+    Geometric temperature scheduler:
+    T(step) = start_temp * (decay_rate)^step
+    decay_rate obliczane tak, by T(end_steps) = end_temp
+    '''
+    def __init__(self, start_temp: float, end_temp: float, end_steps: int):
+        self.reset(start_temp, end_temp, end_steps)
+
+    def getTemp(self, step):
+        temp = self.start_temp * (self.decay_rate ** step)
+        return max(temp, self.end_temp)
+
+    def reset(self, start_temp: float, end_temp: float, end_steps: int):
+        self.start_temp = start_temp
+        self.end_temp = end_temp
+        self.end_steps = end_steps
+        # decay_rate obliczony tak, że temp schodzi do end_temp po end_steps krokach
+        self.decay_rate = (end_temp / start_temp) ** (1 / end_steps)
+
+
+class ReciprocalTempSheduler(TempSheduler):
+    '''
+    Reciprocal temperature scheduler:
+    T(step) = start_temp / (1 + decay_factor * step)
+    decay_factor obliczane na podstawie end_steps
+    '''
+    def __init__(self, start_temp: float, end_temp: float, end_steps: int):
+        self.reset(start_temp, end_temp, end_steps)
+
+    def getTemp(self, step):
+        temp = self.start_temp / (1 + self.decay_factor * step)
+        return max(temp, self.end_temp)
+
+    def reset(self, start_temp: float, end_temp: float, end_steps: int):
+        self.start_temp = start_temp
+        self.end_temp = end_temp
+        self.end_steps = end_steps
+        self.decay_factor = (start_temp / end_temp - 1) / end_steps
+
+class LogarithmicTempSheduler(TempSheduler):
+    '''
+    Logarithmic temperature scheduler:
+    T(step) = start_temp / log(1 + decay_factor * step)
+    decay_factor obliczane na podstawie end_steps
+    '''
+    def __init__(self, start_temp: float, end_temp: float, end_steps: int):
+        self.reset(start_temp, end_temp, end_steps)
+
+    def getTemp(self, step):
+        if step == 0:
+            return self.start_temp
+        temp = self.start_temp / math.log(1 + self.decay_factor * step)
+        return max(temp, self.end_temp)
+
+    def reset(self, start_temp: float, end_temp: float, end_steps: int):
+        self.start_temp = start_temp
+        self.end_temp = end_temp
+        self.end_steps = end_steps
+        self.decay_factor = (math.exp(start_temp / end_temp) - 1) / end_steps

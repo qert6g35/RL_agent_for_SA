@@ -12,6 +12,9 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 import os
 import time
+from collections import deque
+from statistics import mean, stdev
+import math
 
 #niżej struktura zapropomowana przez co-pilota (bardzo nie chciał się do tego przyznać)
 
@@ -51,7 +54,8 @@ class PPO:
         self.num_envs = 5
         self.num_steps = 128 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = int(10000.0 * SA_env().max_steps / self.num_envs) # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.total_timesteps = int(100000.0 * SA_env().max_steps / self.num_envs) # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.lr_cycle = int(self.total_timesteps / 5)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
@@ -109,6 +113,9 @@ class PPO:
         self.rewards = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
         self.dones = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
         self.values = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
+
+
+        self.episode_rewards = deque([0.0 for _ in range (self.num_envs)], self.num_envs)
         # print("next obs shape",self.next_obs.shape)
         # print("agent.getValue(next obs)",self.agent.get_value(self.next_obs))
         # print("agent.getValue(next obs) shape",self.agent.get_value(self.next_obs).shape)
@@ -117,13 +124,14 @@ class PPO:
 
     def save_model(self,updates):
         torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(updates + self.vers_offset))
-        if int(updates%(self.total_timesteps // self.batch_size / 10)) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1)):
+        if int(updates%(self.total_timesteps // self.batch_size / 25)) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1)):
             os.remove(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1))
 
 
 
     def run_learning(self):
         # TRY NOT TO MODIFY: start the game
+        save_rewards_mean = False
         global_step = 0
         nxt_obs,_ = self.envs.reset()
         next_obs = torch.Tensor(nxt_obs).to(self.device)
@@ -131,12 +139,17 @@ class PPO:
         num_updates = self.total_timesteps // self.batch_size
         print("there should be ",num_updates,"updates in PPO learning")
         start_time = time.time()
+        envs_reseted = 0
+        envs_that_need_to_be_reset = self.num_envs
         # główna pętla ucząca
         for update in range(1,num_updates+1):
             print("Updates progress: ",update)
             # zmiana / dostosowanie lr
             if self.update_lr:
-                updated_lr = self.starting_lr * (1.0 - (update - 1.0)/ num_updates)
+                progress = (global_step % self.lr_cycle) / self.lr_cycle
+                cosine_decay = 0.5 * (1 + math.cos(math.pi * progress))
+                updated_lr = self.starting_lr * cosine_decay 
+                #updated_lr = self.starting_lr * (1.0 - (update - 1.0)/ num_updates)
                 self.optimizer.param_groups[0]["lr"] = updated_lr
 
             for step in range(0, self.num_steps): # tutaj wykonujemy tyle stepów ile przypada na 1 batch
@@ -155,6 +168,21 @@ class PPO:
                 next_obs, reward, done,_, info = self.envs.step(action.cpu().numpy())
                 self.rewards[step] = torch.tensor(reward).to(self.device).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs).to(self.device), torch.Tensor(done).to(self.device)
+                
+                if "tr" in info:
+                    for value in info["tr"]:
+                        self.episode_rewards.append(value)
+                        envs_that_need_to_be_reset -= 1
+                        if envs_that_need_to_be_reset == 0:
+                            save_rewards_mean = True
+
+                        
+
+                if save_rewards_mean:
+                    envs_reseted += self.num_envs
+                    envs_that_need_to_be_reset += self.num_envs
+                    save_rewards_mean = False
+                    self.writer.add_scalar("charts/avr_reward_from_last_"+str(self.num_envs), mean(self.episode_rewards), envs_reseted)
 
 
             # # bootstrap value if not done

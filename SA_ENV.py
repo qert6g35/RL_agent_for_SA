@@ -1,3 +1,4 @@
+from sympy import total_degree
 import SA
 import math
 import Problem
@@ -17,6 +18,8 @@ class SA_env(gym.Env):
         self.actions = [float(f) * 0.01 for f in range(80,121,4)]
         self.action_space = gym.spaces.Discrete(len(self.actions))
         self.no_reward_steps = max(int(max_steps * 0.005),5)
+        self.total_reward = 0
+        self.done = False
         #print("there will be no reward for first steps:",self.no_reward_steps)
         self.max_steps = max_steps
         self.run_history = []
@@ -78,6 +81,8 @@ class SA_env(gym.Env):
         obs = self.observation()
         self.run_history = [obs + [0,0]]
         self.run_history[0][-2] = self.current_temp
+        self.done = False
+        self.total_reward = 0
         return self.observation(), self.info() #!!! we pas none as info
 
     def step(self,action_number):
@@ -153,11 +158,12 @@ class SA_env(gym.Env):
             is_terminated = False
         else:
             is_terminated = True
+            self.done = True
 
         
 
         self.run_history.append( new_observation + [self.current_temp,reward])
-
+        self.total_reward += reward
         return new_observation, reward , is_terminated, False, self.info()
 
     
@@ -165,7 +171,9 @@ class SA_env(gym.Env):
         return self.run_history
 
     def info(self): # nie sądze by to było potzebne więc zostawiam pusty set 
-        return {}#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
+        if self.done:
+            return {"tr":self.total_reward}#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
+        return {}
 
     def observation(self,normalize = True):
         normalize_factor = self.norm_reward_scale / self.SA.problem.getUpperBound()

@@ -1,3 +1,4 @@
+from re import S
 import DQN.DQN_Models as models
 import DQN.DQN_objs as objs
 import torch.nn as nn
@@ -15,12 +16,16 @@ import numpy as np
 import os
 from torch.utils.tensorboard import SummaryWriter
 import time
+from collections import deque
+from statistics import mean, stdev
 
 #matplotlib.use('Qt5Agg')
 
 class DQN:
     
     def __init__(self ,load_model_path=None,save_model_offset = 0):
+        self.episodes = 2500
+
         self.model_offset = save_model_offset
         memory_samples_capacity = 500000
         max_steps_for_sa = 10000
@@ -49,7 +54,10 @@ class DQN:
 
         self.starting_lr = 0.002
         self.lr_anneling = "cosine"
+        self.lr_cycle = 500 * self.env.max_steps
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=self.starting_lr)
+        self.number_of_env_reward_collected = 3# z ilu ostatnich środowisk zbieramy nagrodę
+        self.episode_rewards = deque([0.0 for _ in range (self.number_of_env_reward_collected)], self.number_of_env_reward_collected) # pojemnik na reward
         
 
 
@@ -91,7 +99,7 @@ class DQN:
         self.optimizer.step()
         return loss
         
-    def run(self, episodes, file_name_to_save_model:str = None):
+    def run(self, file_name_to_save_model:str = None):
         start_learning_date_sample = datetime.today().strftime('%Y_%m_%d_%H_%M')
         start_time = time.time()
         print(f'Started learning {start_learning_date_sample}')
@@ -99,9 +107,9 @@ class DQN:
         if file_name_to_save_model is not None:
             start_learning_date_sample = file_name_to_save_model
         learning_step = 0
-        for i_episode in range(episodes):
+        for i_episode in range(self.episodes):
             print(" ")
-            print(f'Learning episode {i_episode}/{episodes}')
+            print(f'Learning episode {i_episode}/{self.episodes}')
             print("episilon for episode:", self.epsilon)
             print("learning rate for episode:",self.optimizer.param_groups[0]["lr"])
             # Initialize the environment and get its state
@@ -113,11 +121,14 @@ class DQN:
                     self.epsilon = 1.0
 
                 action = self.select_action(state)
-                observation, reward, done,_,_= self.env.step(action.item())
+                observation, reward, done,_,info= self.env.step(action.item())
                 reward = torch.tensor([reward], dtype=torch.float32)
 
                 if done:
                     next_state = None
+                    self.episode_rewards.append(info["tr"])
+                    writer.add_scalar("charts/avr_reward_from_last_"+str(self.number_of_env_reward_collected), mean(self.episode_rewards), i_episode)
+                    writer.add_scalar("charts/last_episode_total_reward", info["tr"],i_episode)
                 else:
                     next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
                 # Store the transition in memory
@@ -133,12 +144,12 @@ class DQN:
                 state = next_state
 
                 # Perform one step of the optimization (on the policy network)
-                if t%50 == 0:
+                if t%50 == 0 or done:
                      # dodje powolne zmniejszanie lr
                     if self.lr_anneling == "linear":
-                        updated_lr = self.starting_lr * (1.0 - ((i_episode * self.env.max_steps + t) - 1.0)/(episodes * self.env.max_steps))
+                        updated_lr = self.starting_lr * (1.0 - ((i_episode * self.env.max_steps + t) - 1.0)/(self.episodes * self.env.max_steps))
                     elif self.lr_anneling == "cosine":
-                        progress = (i_episode * self.env.max_steps + t - 1.0) / (episodes * self.env.max_steps)
+                        progress = ((i_episode * self.env.max_steps + t - 1.0) % self.lr_cycle) / self.lr_cycle
                         cosine_decay = 0.5 * (1 + math.cos(math.pi * progress))
                         updated_lr = self.starting_lr * cosine_decay 
                     else:
@@ -159,7 +170,7 @@ class DQN:
                             writer.add_scalar("losses/value_loss", loss.item(), learning_step)
                         else:
                             writer.add_scalar("losses/value_loss", 0, learning_step)
-                        # writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
+
                         # writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
                         # writer.add_scalar("losses/old_approx_kl", old_approx_kl.item(), global_step)
                         # writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
@@ -189,7 +200,7 @@ class DQN:
     def saveModel(self,verssioning,eps):
         episode = eps + self.model_offset
         torch.save(self.policy_net.state_dict(), "DQN_NN_"+verssioning+"_eps"+str(episode))
-        if os.path.exists("DQN_NN_"+verssioning+"_eps"+str(episode-1)) and (eps%101 != 0 or eps == 0 or eps == 1):
+        if os.path.exists("DQN_NN_"+verssioning+"_eps"+str(episode-1)) and (eps%250 != 0 or eps == 0 or eps == 1):
             os.remove("DQN_NN_"+verssioning+"_eps"+str(episode-1))
 
     # def sampleMemoryBatch(self):
