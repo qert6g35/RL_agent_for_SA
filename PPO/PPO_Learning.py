@@ -183,6 +183,7 @@ class PPO:
                     envs_that_need_to_be_reset += self.num_envs
                     save_rewards_mean = False
                     self.writer.add_scalar("charts/avr_reward_from_last_"+str(self.num_envs), mean(self.episode_rewards), envs_reseted)
+                    print("for envs reset",envs_reseted,"we go mean total reward:",mean(self.episode_rewards))
 
 
             # # bootstrap value if not done

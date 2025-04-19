@@ -111,3 +111,6 @@ class DQN_NN_Tutorial(nn.Module):
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
         return self.layer3(x)
+    
+
+DQN_MODELS = [DuelingDQN_NN,DQN_NN_Tutorial,DQN_NN_V1]

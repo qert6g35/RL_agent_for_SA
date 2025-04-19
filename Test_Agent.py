@@ -1,6 +1,11 @@
+from cProfile import label
+from glob import glob
+from re import S
+from turtle import color, st
 import Problem
 import TempSheduler
 from DQN.DQN_Models import DQN_NN_V1,DuelingDQN_NN
+from PPO.PPO_Model import PPO_NN
 import SA_ENV as SA_ENV
 import Problem
 import TempSheduler
@@ -8,6 +13,7 @@ import matplotlib.pyplot as plt
 import SA
 import torch
 from collections import Counter
+from typing import List
 
 
 def plot_SA_output(lbest_values_list,lcurrent_values_list,ltemp_values_list,dbest_values_list,dcurrent_values_list,dtemp_values_list):
@@ -82,67 +88,177 @@ def TestGivenTempSheduler(TSM):
     
     return best_values_list,current_values_list,temp_values_list
 
+def compareTempSheduler():
+    start = 100
+    end = 1
+    steps = 1000
+    # TS: List[TempSheduler.TempSheduler] = [
+    #     TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+    #     TempSheduler.LinearScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+
+    #     TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+    #     TempSheduler.ReciprocalScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+    #     TempSheduler.ReciprocalScheduler_SecondKind(start_temp=start,end_temp=end,total_steps=steps),
+
+    #     TempSheduler.GeometricTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+    #     TempSheduler.GeometricScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+    #     TempSheduler.GeometricScheduler_SecondKind(start_temp=start,end_temp=end,total_steps=steps),
+
+    #     TempSheduler.LogarithmicTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+    #     TempSheduler.LogarithmicScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+    #     TempSheduler.LogarithmicScheduler_SecondKind(start_temp=start,end_temp=end,total_steps=steps),        
+    # ]
+    # TS_type_number = [2,3,3,3]
+
+    TS: List[TempSheduler.TempSheduler] = [
+        #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        TempSheduler.LinearScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+
+        #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        TempSheduler.ReciprocalScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+        TempSheduler.ReciprocalScheduler_SecondKind(start_temp=start,end_temp=end,total_steps=steps),
+
+        #TempSheduler.GeometricTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        TempSheduler.GeometricScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+        TempSheduler.GeometricScheduler_SecondKind(start_temp=start,end_temp=end,total_steps=steps),
+
+        #TempSheduler.LogarithmicTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        TempSheduler.LogarithmicScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+        TempSheduler.LogarithmicScheduler_SecondKind(start_temp=start,end_temp=end,total_steps=steps),        
+    ]
+    TS_type_number = [1,2,2,2]
+
+    data = [ [] for _ in TS]
+    steps_lsit = []
+
+    for step in range(1,steps+1):
+        steps_lsit.append(step)
+        for i in range(len(TS)):
+            data[i].append(TS[i].getTemp(step=step))
+    
+    # Tworzenie subplotów 2x2
+    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+    fig.suptitle("Porównanie różnych harmonogramów temperatury", fontsize=14)
+
+    id_0 = 0
+    id_1 = 0
+    global_done = 0
+    plot_color = ["orange","green","blue"]
+    plot_title = ["Linear","Reciprocal","Geometric","Logarithmic"]
+    labels = ["first","second"]
+    for num_of_data in TS_type_number:
+        axs[id_0, id_1].set_title(plot_title.pop(0))
+        for id in range(num_of_data):
+            axs[id_0, id_1].plot(steps_lsit, data[id + global_done],label = labels[id],color = plot_color[id])
+
+        global_done += num_of_data
+        if id_0 == 0:
+            id_0 = 1
+        else:
+            id_0 = 0
+            id_1 = 1
+            
+    for ax in axs.flat:
+        ax.set(xlabel='Krok', ylabel='Temperatura')
+        ax.grid(True)
+    plt.legend()
+    plt.show()
 
 def make_compareing_test(NUM_TESTS):
-
     test_result = {}
 
-    def collect_run_result(run_result,problem_dimention:int):
+    def collect_run_result(run_result: dict, problem_dimention: int):
         '''
-            Dla wskazanego rozmiaru problemu, podajemy listy danych:
-            0 - nazwa użytego alg temperaturowego
-            1 - osiągnięta wartość najleprzego wyniku
-            2 - Liczba iteracji potrzebna do uzyskania tego wyniku
+        For a given problem dimension, collect:
+        0 - name of the temperature schedule
+        1 - final best result
+        2 - number of iterations needed to reach that result
         '''
         refactored_result = []
+        
         for key in run_result:
+            last_value = run_result[key][-1]
+            all_values = run_result[key]
+            count_best = Counter(all_values)[last_value]
+            iterations_to_best = len(all_values) - count_best
+
             refactored_result.append([
                 key,
-                run_result[key][0][-1],
-                len(run_result[key][0]) - len(Counter(run_result[key][0])[run_result[key][0][-1]])
-                ])
-        try:
-            test_result[problem_dimention].append(run_result)
-        except:
-            test_result[problem_dimention] = [run_result]
+                last_value,
+                iterations_to_best
+            ])
+        
+        if problem_dimention not in test_result:
+            test_result[problem_dimention] = []
 
-    DQN_SA_engine = SA_ENV.SA_env()
+        test_result[problem_dimention].append(refactored_result)
+
+    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True)
     # DQN_model = DuelingDQN_NN()
 
-    DQN_nn = DQN_NN_V1(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
-    DQN_nn.load_state_dict(torch.load('NN_Models/DQN/V1/B/ekplodujące_zanikające_wartości/DQN_policy_model_DQN_V1_B_ok_300_500_eps'))
+    DQN_nn_999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    DQN_nn_999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_17_01_04_eps999'))
 
-    LinerSA = SA.SA()
-    LinearTS = TempSheduler.LinearTempSheduler(0.0,0.0,0.0)
+    PPO_nn_31206 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    PPO_nn_31206.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/PPO_2025_04_16_20_35_updates31206'))
+
+    NN_TS = [
+        ("PPO_update_31206",PPO_nn_31206,SA_ENV.SA_env()),
+        ("DDQN_eps_1000",DQN_nn_999,SA_ENV.SA_env()),
+    ]
+
+    TS: List[TempSheduler.TempSheduler] = [
+        #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("Linear",TempSheduler.LinearScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+
+        #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("ReciprocalV1",TempSheduler.ReciprocalScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+        ("ReciprocalV2",TempSheduler.ReciprocalScheduler_SecondKind(),SA.SA(skip_initialization=True)),
+
+        #TempSheduler.GeometricTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("GeometricV1",TempSheduler.GeometricScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+        ("GeometricV2",TempSheduler.GeometricScheduler_SecondKind(),SA.SA(skip_initialization=True)),
+
+        #TempSheduler.LogarithmicTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("LogarithmicV1",TempSheduler.LogarithmicScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+        ("LogarithmicV2",TempSheduler.LogarithmicScheduler_SecondKind(),SA.SA(skip_initialization=True)),     
+    ]
 
 
     for i in range(NUM_TESTS):
         new_problem = Problem.TSP()
         initial_solution = new_problem.get_initial_solution()
 
-        DQN_SA_engine.reset(preset_problem=new_problem,initial_solution=initial_solution)
-        LinerSA.reset(preset_problem=new_problem,initial_solution=initial_solution)
+        # DQN_SA_engine.reset(preset_problem=new_problem,initial_solution=initial_solution)
+        # LinerSA.reset(preset_problem=new_problem,initial_solution=initial_solution)
 
-        LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
+        for nn_tuple in NN_TS:
+            nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
+
+        t_max = NN_TS[0][2].starting_temp
+        t_min = NN_TS[0][2].min_temp
+        # LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
+
+        for tuple in TS:
+            tuple[1].reset(t_max,t_min,DQN_SA_engine.max_steps)
+            tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
+
+
 
         run_results = {}
 
-        linear_BV,linear_CV,linear_TV = LinerSA.run(max_steps=DQN_SA_engine.max_steps, 
-                                    temp_shadeuling_model=LinearTS,
-                                    collect_best_values=True,
-                                    collect_current_values=True,
-                                    collect_temperature_shadule=True)
-        
-        run_results += {"linear":[linear_BV,linear_CV,linear_TV]}
-        
-        DQN_BV,DQN_CV,DQN_TV = DQN_SA_engine.runTest(model=DQN_nn)
-
-        run_results += {"DQN_V1_B":[DQN_BV,DQN_CV,DQN_TV]}
-
-        plot_SA_output(linear_BV,linear_CV,linear_TV,DQN_BV,DQN_CV,DQN_TV)
+        for tuple in NN_TS:
+            run_results[tuple[0]] = tuple[2].runTest(model=tuple[1])
+            
+        for tuple in TS:
+            run_results[tuple[0]] = tuple[2].run(
+                max_steps=DQN_SA_engine.max_steps, 
+                temp_shadeuling_model=tuple[1])
 
         collect_run_result(run_results,new_problem.getDimention())
+    print(test_result)
 
+make_compareing_test(1)
 
 # ✅ 1. Jakość uzyskanego rozwiązania (wartość funkcji celu)
 # Podstawowe kryterium.

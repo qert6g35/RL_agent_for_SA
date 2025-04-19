@@ -1,7 +1,7 @@
 from DQN.DQN_Learning import DQN
 
 
-DQN_eng = DQN()
+DQN_eng = DQN(load_model_path="NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_17_01_04_eps999",save_model_offset=999)
 # print("starting evaluation")
 # DQN_eng.env.SA.problem.evaluate_tsp_files()
 print("starting learning")

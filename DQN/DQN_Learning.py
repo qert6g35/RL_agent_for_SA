@@ -24,7 +24,7 @@ from statistics import mean, stdev
 class DQN:
     
     def __init__(self ,load_model_path=None,save_model_offset = 0):
-        self.episodes = 2500
+        self.episodes = 2000
 
         self.model_offset = save_model_offset
         memory_samples_capacity = 500000
@@ -56,7 +56,7 @@ class DQN:
         self.lr_anneling = "cosine"
         self.lr_cycle = 500 * self.env.max_steps
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=self.starting_lr)
-        self.number_of_env_reward_collected = 3# z ilu ostatnich środowisk zbieramy nagrodę
+        self.number_of_env_reward_collected = 5# z ilu ostatnich środowisk zbieramy nagrodę
         self.episode_rewards = deque([0.0 for _ in range (self.number_of_env_reward_collected)], self.number_of_env_reward_collected) # pojemnik na reward
         
 
@@ -107,7 +107,7 @@ class DQN:
         if file_name_to_save_model is not None:
             start_learning_date_sample = file_name_to_save_model
         learning_step = 0
-        for i_episode in range(self.episodes):
+        for i_episode in range(1,1+self.episodes):
             print(" ")
             print(f'Learning episode {i_episode}/{self.episodes}')
             print("episilon for episode:", self.epsilon)
@@ -129,6 +129,7 @@ class DQN:
                     self.episode_rewards.append(info["tr"])
                     writer.add_scalar("charts/avr_reward_from_last_"+str(self.number_of_env_reward_collected), mean(self.episode_rewards), i_episode)
                     writer.add_scalar("charts/last_episode_total_reward", info["tr"],i_episode)
+                    print("For episode:",i_episode,"we got last env reward:",info["tr"]," mean of last 5:",mean(self.episode_rewards))
                 else:
                     next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
                 # Store the transition in memory
@@ -200,7 +201,7 @@ class DQN:
     def saveModel(self,verssioning,eps):
         episode = eps + self.model_offset
         torch.save(self.policy_net.state_dict(), "DQN_NN_"+verssioning+"_eps"+str(episode))
-        if os.path.exists("DQN_NN_"+verssioning+"_eps"+str(episode-1)) and (eps%250 != 0 or eps == 0 or eps == 1):
+        if os.path.exists("DQN_NN_"+verssioning+"_eps"+str(episode-1)) and (eps%200 != 0 or eps == 1):
             os.remove("DQN_NN_"+verssioning+"_eps"+str(episode-1))
 
     # def sampleMemoryBatch(self):

@@ -155,8 +155,10 @@ Nagroda:
 
 
 
-E: zmiany od D to dodanie lr anneling i zwiększenie lr, do tego zmiany w rzadszym uczeniu z nieco większą ilością danych
+E: zmiany od D to dodanie lr anneling i zwiększenie lr, do tego zmiany: rzdsze uczenie
 
 konfiguracje we/wy jak w B
 
 obliczamy nagrodę tak jak w D
+
+Uczono na środowisku do 5000 kroków!!!!!

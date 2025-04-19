@@ -1,4 +1,7 @@
+from ast import mod
 from sympy import total_degree
+from DQN import DQN_Models
+from PPO import PPO_Model
 import SA
 import math
 import Problem
@@ -217,16 +220,18 @@ class SA_env(gym.Env):
         #a = input("TEST:")
         return steps_without_solution_correction
     
-    def runTest(self,model):
+    def runTest(self,model,generate_plot_data = False):
         obs = self.observation()
         self.run_history = []
         for t in count():
             #getting new temperature
             with torch.no_grad():
-                actionNR = model(torch.tensor(obs, dtype=torch.float32))
-                if t%500 == 0:
-                    print(actionNR)
-                self.current_temp = self.current_temp * self.actions[actionNR.unsqueeze(0).max(1).indices.view(1, 1).item()]
+                if type(model) in PPO_Model.PPO_MODELS:
+                    actionNR = model.get_action(torch.tensor(obs, dtype=torch.float32))
+                elif type(model) in DQN_Models.DQN_MODELS:
+                    actionNR = model(torch.tensor(obs, dtype=torch.float32).unsqueeze(0))
+                    actionNR = actionNR.max(1).indices.view(1, 1).item()
+                self.current_temp = self.current_temp * self.actions[actionNR]
                 if self.current_temp < self.min_temp:
                     self.current_temp = self.min_temp
                 if self.current_temp > self.starting_temp*10:
@@ -242,9 +247,12 @@ class SA_env(gym.Env):
             if self.SA.steps_done == self.max_steps:
                 break
 
-        transposed_run_history = list(map(list, zip(*self.run_history)))
         unnormalize_factor =  self.SA.problem.getUpperBound() /self.norm_reward_scale 
-        return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],transposed_run_history[-3]  #best_values,current_values,temperature_values
+        if generate_plot_data:
+            transposed_run_history = list(map(list, zip(*self.run_history)))
+            return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],transposed_run_history[-3]  #best_values,current_values,temperature_values
+        else:
+            return [x[1] * unnormalize_factor for x in self.run_history] 
 
     def render(self):
         return super().render()

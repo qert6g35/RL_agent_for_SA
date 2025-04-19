@@ -5,8 +5,19 @@ from TempSheduler import TempSheduler
     
 
 class SA:
-    def __init__(self, preset_problem:Problem.Problem = None, initial_solution = None):
-        self.reset(preset_problem,initial_solution)
+    def __init__(self, preset_problem:Problem.Problem = None, initial_solution = None,skip_initialization = False):
+        if skip_initialization == True:
+            #params
+            self.steps_done = 0
+            self.problem = None
+            #setting up initial solution
+            self.current_solution = []
+            self.current_solution_value = 0
+            # setting first best solution
+            self.best_solution = self.current_solution
+            self.best_solution_value = self.current_solution_value
+        else:
+            self.reset(preset_problem,initial_solution)
 
     def reset(self,preset_problem:Problem.Problem = None, initial_solution = None):
         #params
@@ -50,7 +61,7 @@ class SA:
 
         self.steps_done += 1
 
-    def run(self, max_steps:int, temp_shadeuling_model:TempSheduler,collect_best_values = False,collect_current_values = False,collect_temperature_shadule = False):
+    def run(self, max_steps:int, temp_shadeuling_model:TempSheduler,generate_plot_data = False):
         best_values = []
         current_values = []
         temperature_values = []
@@ -62,12 +73,13 @@ class SA:
             self.step(temp)
 
             #collecting data
-            if collect_best_values:
-                best_values.append(self.best_solution_value)
-            if collect_current_values:
+            best_values.append(self.best_solution_value)
+            if generate_plot_data:
                 current_values.append(self.current_solution_value)
-            if collect_temperature_shadule:
+            if generate_plot_data:
                 temperature_values.append(temp)
 
-        return best_values,current_values,temperature_values
+        if generate_plot_data:
+            return best_values,current_values,temperature_values
+        return best_values
 

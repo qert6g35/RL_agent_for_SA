@@ -1,1 +1,3 @@
 A: Środowisko oraz we/wy jak i nagroda są takie same jak w przypadku DuelingDQN wesja D.
+
+Uczono na środowisku do 5000 kroków!!!!
