@@ -168,6 +168,102 @@ def compareTempSheduler():
     plt.legend()
     plt.show()
 
+def make_ploting_test():
+    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True)
+    # DQN_model = DuelingDQN_NN()
+
+    DQN_nn_999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    DQN_nn_999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_17_01_04_eps999'))
+
+    DQN_nn_2999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    DQN_nn_2999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_19_08_34_eps2999'))
+
+    PPO_nn_31206 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    PPO_nn_31206.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/1/PPO_2025_04_16_20_35_updates31206'))
+
+    PPO_nn_115352 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    PPO_nn_115352.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/2/PPO_2025_04_17_22_19_updates115352'))
+
+    NN_TS = [
+        ("PPO_update_31k",PPO_nn_31206,SA_ENV.SA_env()),
+        ("DDQN_eps_1k",DQN_nn_999,SA_ENV.SA_env()),
+        ("PPO_update_115k",PPO_nn_115352,SA_ENV.SA_env()),
+        ("DDQN_eps_3k",DQN_nn_2999,SA_ENV.SA_env()),
+    ]
+
+    TS: List[TempSheduler.TempSheduler] = [
+        #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("Linear",TempSheduler.LinearScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+
+        #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("ReciprocalV1",TempSheduler.ReciprocalScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+        ("ReciprocalV2",TempSheduler.ReciprocalScheduler_SecondKind(),SA.SA(skip_initialization=True)),
+
+        #TempSheduler.GeometricTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("GeometricV1",TempSheduler.GeometricScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+        ("GeometricV2",TempSheduler.GeometricScheduler_SecondKind(),SA.SA(skip_initialization=True)),
+
+        #TempSheduler.LogarithmicTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("LogarithmicV1",TempSheduler.LogarithmicScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+        ("LogarithmicV2",TempSheduler.LogarithmicScheduler_SecondKind(),SA.SA(skip_initialization=True)),     
+    ]
+
+    new_problem = Problem.TSP()
+    initial_solution = new_problem.get_initial_solution()
+
+    # DQN_SA_engine.reset(preset_problem=new_problem,initial_solution=initial_solution)
+    # LinerSA.reset(preset_problem=new_problem,initial_solution=initial_solution)
+
+    for nn_tuple in NN_TS:
+        nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
+
+    t_max = NN_TS[0][2].starting_temp
+    t_min = NN_TS[0][2].min_temp
+    # LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
+
+    for tuple in TS:
+        tuple[1].reset(t_max,t_min,DQN_SA_engine.max_steps)
+        tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
+
+
+
+    run_Best = {}
+    run_Current = {}
+    run_Temp = {}
+
+    for tuple in NN_TS:
+        run_Best[tuple[0]],run_Current[tuple[0]],run_Temp[tuple[0]] = tuple[2].runTest(model=tuple[1],generate_plot_data=True)
+
+    for key in run_Best:
+        plt.ion()
+        # Tworenie figury i trzech subplotów
+        fig, axs = plt.subplots(3, 1, figsize=(8, 10))
+
+        # Wykresy
+        axs[0].plot(run_Best[key], color='blue')
+        axs[0].set_title(key)
+
+        axs[1].plot(run_Current[key], color='green')
+
+
+        axs[2].plot(run_Temp[key], color='red')
+
+
+        # Dostosowanie wyglądu
+        plt.tight_layout()
+        plt.show()
+
+    input("")
+
+
+    # for tuple in TS:
+    #     run_results[tuple[0]] = tuple[2].run(
+    #         max_steps=DQN_SA_engine.max_steps, 
+    #         temp_shadeuling_model=tuple[1])
+
+
+
+
 def make_compareing_test(NUM_TESTS):
     test_result = {}
 
@@ -220,12 +316,20 @@ def make_compareing_test(NUM_TESTS):
     DQN_nn_999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
     DQN_nn_999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_17_01_04_eps999'))
 
+    DQN_nn_2999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    DQN_nn_2999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_19_08_34_eps2999'))
+
     PPO_nn_31206 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
-    PPO_nn_31206.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/PPO_2025_04_16_20_35_updates31206'))
+    PPO_nn_31206.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/1/PPO_2025_04_16_20_35_updates31206'))
+
+    PPO_nn_115352 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    PPO_nn_115352.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/2/PPO_2025_04_17_22_19_updates115352'))
 
     NN_TS = [
-        ("PPO_update_31206",PPO_nn_31206,SA_ENV.SA_env()),
-        ("DDQN_eps_1000",DQN_nn_999,SA_ENV.SA_env()),
+        ("PPO_update_31k",PPO_nn_31206,SA_ENV.SA_env()),
+        ("DDQN_eps_1k",DQN_nn_999,SA_ENV.SA_env()),
+        ("PPO_update_115k",PPO_nn_115352,SA_ENV.SA_env()),
+        ("DDQN_eps_3k",DQN_nn_2999,SA_ENV.SA_env()),
     ]
 
     TS: List[TempSheduler.TempSheduler] = [
@@ -277,10 +381,11 @@ def make_compareing_test(NUM_TESTS):
                 temp_shadeuling_model=tuple[1])
 
         collect_run_result(run_results,new_problem.getDimention())
-        #if i % 100 == 0:
-        save_flat_sa_results_to_csv()
+        if i % 25 == 0:
+            save_flat_sa_results_to_csv()
 
-make_compareing_test(1)
+make_ploting_test()
+#make_compareing_test(10000)
 
 # ✅ 1. Jakość uzyskanego rozwiązania (wartość funkcji celu)
 # Podstawowe kryterium.

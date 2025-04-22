@@ -10,6 +10,7 @@ import torch
 import gymnasium as gym
 import numpy as np
 from gymnasium.envs.registration import register
+from collections import deque
 
 #SA enviroment devined for DQN
 class SA_env(gym.Env):
@@ -26,10 +27,11 @@ class SA_env(gym.Env):
         #print("there will be no reward for first steps:",self.no_reward_steps)
         self.max_steps = max_steps
         self.run_history = []
-        self.norm_reward_scale = 200.0
+        self.norm_reward_scale = 10.0
+        self.last_temps = deque([],maxlen=10)
 
-        low = np.array([0, 0, 0, 0, 0], dtype=np.float32)
-        high = np.array([1, 1, 1, 1, 100], dtype=np.float32) #! uwaga możliwe że trzeba będzie określić maksymalną temperaturę dla środowiska
+        low = np.array([0, 0, 0, 0, 0,-1,-1], dtype=np.float32)
+        high = np.array([1, 1, 1, 1, 100,1,1], dtype=np.float32) #! uwaga możliwe że trzeba będzie określić maksymalną temperaturę dla środowiska
         self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
 
         #extra elements
@@ -54,8 +56,7 @@ class SA_env(gym.Env):
             #print("we have starting temp:",self.starting_temp)
             #print("we have min temp:",self.min_temp)
             self.current_temp = self.starting_temp
-            self.run_history.append(self.observation() + [0,0])
-            self.run_history[0][-2] = self.current_temp
+            self.run_history.append(self.observation() + [self.current_temp,0])
         else:
             self.SA = None
             self.starting_temp = 0.0
@@ -82,8 +83,7 @@ class SA_env(gym.Env):
         #print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
         obs = self.observation()
-        self.run_history = [obs + [0,0]]
-        self.run_history[0][-2] = self.current_temp
+        self.run_history = [obs + [self.current_temp,0]]
         self.done = False
         self.total_reward = 0
         return self.observation(), self.info() #!!! we pas none as info
@@ -101,62 +101,65 @@ class SA_env(gym.Env):
         self.SA.step(self.current_temp)
         new_observation = self.observation()
 
-        
-        # obliczamy nagrodę
-        # TODO nagrody których dodanie trzeba wykonać / przemyśleć
-        #! różne źródła nagród powinniśmy ze sobą nawzajem ważyć
-        #? KROKI BEZ POPRAWY WARTOŚCI FUNKCJI CELU NIE POWINNY BYĆ NAGRODZONE
-        # kara za zdropowanie temperatury do 0 zbyt szybko i nie podnoszenie jej przez dłuższy czas
-        # kara za zakończenie ze zbyt wysoką temperaturę
-        # nagroda za zakończenie z niską temperaturą
-        # kara za zbyt gwałtowną zmianę temperatury (machanie góra dół lub wybieranie tylko gwałtowniejszych zmian)
-        #*  nagrody które już 
-        # kara za każde x kroków bez poprawy best_solution 
-        # nagroda za popawę najleprzej wartości
-        # kara za temperaturę przekraczającą <temp_min,starting_temp*2>
+        improvement = abs( self.run_history[-1][1] - new_observation[1] )
+        reward = 0.0
 
-        # nagroda za poprawę best value
-        reward = 2*(self.run_history[-1][1] - new_observation[1])
-        if reward < 0:
-            reward = -reward
-        if reward != 0 and self.SA.steps_done > self.max_steps*0.02:
-            reward += max(10.0, math.log(self.SA.steps_done) * 5.0) # dodanie pewnej minimalnej nagrody za poprawę 
+        if improvement > 0:
+            reward = self.norm_reward_scale * improvement
+            reward = math.log1p(reward * self.SA.steps_done) * 5
 
-        #! uwaga tutaj najbardziej newraligncze miejsce dycutujące o tym jak wygląda nagroda
-        reward = math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
+            if self.SA.steps_done > self.max_steps * 0.02:
+                reward += 2.0  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
+
         #* do X kroków nie oferujemy nagrody za poprawienie best value
         if self.SA.steps_done < self.no_reward_steps:
             reward = 0.0    
         
-        teperature_factor = self.current_temp/self.starting_temp
+        teperature_factor = (self.current_temp - self.min_temp) /(self.starting_temp - self.min_temp)
+        self.last_temps.append(teperature_factor)
 
         #* kara za przekroczenie granic temperaturowych
         if was_temp_lower_than_min:
-            reward -= 5.0
+            reward -= 2.0
         elif self.current_temp > self.starting_temp * 3:
-            punishment = 5.0 * (int(teperature_factor)-1)
+            punishment = 0.5 * (int(teperature_factor)-1)
             if punishment > self.norm_reward_scale:
                 punishment = self.norm_reward_scale
             reward -= punishment # silna kara za każdą krotność przekroczenia temperatur
 
-        #* kara za każde x kroków bez poprawy best_solution 
-        #! Kara została zmodyfikowana o specjalnie dobraną wartość * (1/(teperature_factor)-0.5) (sprawdź sobie wykres) nie karamy jak on stara się znaleźć nowe rozwiązanie w przypadku gdy 
         steps_without_solution_correction = self.run_history[-1][3] * self.max_steps
 
-        if (teperature_factor <= 2):
-            if (teperature_factor < 0.09):
-                reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
-            elif teperature_factor < 1:
-                reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
-            elif steps_without_solution_correction > self.max_steps*0.02:
-                reward += max(15 - 30*(steps_without_solution_correction-self.max_steps*0.02)/self.max_steps,-1)  # NAGRADZAMY GO JAK PRUBUJE SZYKAĆ NOWYCH ROZWIĄZAŃ GDY DAWNO CZEGOS NIE ZNALEŹLIŚMY !!!!!!!
-        else:
-            reward -= (steps_without_solution_correction/self.max_steps*10) # tej sytuacji nie chcemy dodatkowo obciążać bo i tak mamy karę za zbyt dużą temperaturę 
+        # znaczne uproszczenie tego jak wygląda poprzednia funkcja okreslająca wa
+        if steps_without_solution_correction > self.max_steps * 0.02:
+            if teperature_factor < 0.2:
+                reward -= 1.0 + 2.0 * (0.2 - teperature_factor)  # lekkie wychłodzenie = mała kara
+            elif teperature_factor > 2.0:
+                reward -= 1.0 + (teperature_factor - 2.0) * 1.5  # grzanie bez efektu = też kara
+            else:
+                # w sensownym zakresie i próbujesz – mikro nagroda
+                reward += 0.5
+                if len(self.last_temps) >= self.last_temps.maxlen-1 and np.std(self.last_temps) < 0.02:
+                    reward -= 1.5
+
+        # if (teperature_factor <= 2):
+        #     if (teperature_factor < 0.09):
+        #         reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
+        #     elif teperature_factor < 1:
+        #         reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
+        #     elif steps_without_solution_correction > self.max_steps*0.02:
+        #         reward += max(15 - 30*(steps_without_solution_correction-self.max_steps*0.02)/self.max_steps,-1)  # NAGRADZAMY GO JAK PRUBUJE SZYKAĆ NOWYCH ROZWIĄZAŃ GDY DAWNO CZEGOS NIE ZNALEŹLIŚMY !!!!!!!
+        # else:
+        #     reward -= (steps_without_solution_correction/self.max_steps*10) # tej sytuacji nie chcemy dodatkowo obciążać bo i tak mamy karę za zbyt dużą temperaturę 
+
+        # drobna nagroda za poprawę current value
+        delta_current = self.run_history[-1][0] - new_observation[0]
+        if delta_current > 0:
+            reward += 0.1* delta_current ** 0.5
 
         #! TO MOŻE NAM POMÓC Z OGARNIĘĆIEM WYBUCHAJĄCYCH WARTOŚCI PRZY STEROWANIU
         # normalizacja nagrody
         reward = max(min(reward,self.norm_reward_scale),-self.norm_reward_scale)/self.norm_reward_scale
-
+        #print("reward:",reward)
         if self.SA.steps_done < self.max_steps:
             is_terminated = False
         else:
@@ -178,8 +181,8 @@ class SA_env(gym.Env):
             return {"tr":self.total_reward}#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
         return {}
 
-    def observation(self,normalize = True):
-        normalize_factor = self.norm_reward_scale / self.SA.problem.getUpperBound()
+    def observation(self):
+        normalize_factor = 1.0 / self.SA.problem.getUpperBound()
 
         # obs = [
         #     self.SA.current_solution_value, 
@@ -190,17 +193,21 @@ class SA_env(gym.Env):
         #     self.min_temp,
         #     self.current_temp
         #     ]
-        
+        if not self.run_history:
+            pre_csv = 0
+            pre_temp = (self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp)
+        else:
+            pre_csv = self.run_history[-1][0]
+            pre_temp = self.run_history[-1][4]
         obs = [
-            self.SA.current_solution_value, 
-            self.SA.best_solution_value,
+            self.SA.current_solution_value * normalize_factor, 
+            self.SA.best_solution_value * normalize_factor,
             self.SA.steps_done/self.max_steps, # (tutaj mamy ile już zrobiliśmy w %) zamienić kroki+max_kroki na % ile zostało 
             self.getStepsWithoutCorrection()/self.max_steps, # dodać ilość korków od ostatniej poprawy (dr)
             (self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp), # dodatkowa normalizacja tempreatury. z racji na to że zakres temperatury tez jest dobierany zaleznie od zadania 
+            pre_csv - self.SA.current_solution_value * normalize_factor, #! dodatkowa różnica curent value od ostatniego kroku (jest dodatnia jak mamy poprawę)
+            (self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp) - pre_temp, #! dodatkowa różnica curent TEMPERATURE od ostatniego kroku
             ]
-
-        if normalize:
-            obs[0],obs[1] = obs[0] * normalize_factor, obs[1] * normalize_factor
 
         return obs
     
@@ -234,8 +241,8 @@ class SA_env(gym.Env):
                 self.current_temp = self.current_temp * self.actions[actionNR]
                 if self.current_temp < self.min_temp:
                     self.current_temp = self.min_temp
-                if self.current_temp > self.starting_temp*10:
-                    self.current_temp = self.starting_temp*10
+                if self.current_temp > self.starting_temp * 10:
+                    self.current_temp = self.starting_temp * 10
             
             #perform SA step
             self.SA.step(self.current_temp)
@@ -247,12 +254,13 @@ class SA_env(gym.Env):
             if self.SA.steps_done == self.max_steps:
                 break
 
-        unnormalize_factor =  self.SA.problem.getUpperBound() /self.norm_reward_scale 
+        unnormalize_factor =  self.SA.problem.getUpperBound() 
         if generate_plot_data:
             transposed_run_history = list(map(list, zip(*self.run_history)))
             return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],transposed_run_history[-3]  #best_values,current_values,temperature_values
         else:
             return [x[1] * unnormalize_factor for x in self.run_history] 
+
 
     def render(self):
         return super().render()

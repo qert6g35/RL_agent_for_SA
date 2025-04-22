@@ -26,13 +26,13 @@ class DuelingDQN_NN(nn.Module):
         super(DuelingDQN_NN,self).__init__()
         self.feature = nn.Sequential(
             layer_init(nn.Linear(obs_size, 128)),
-            nn.ReLU()
+            nn.LeakyReLU(0.1)
         )
 
-        self.hidden = [
+        self.hidden = nn.ModuleList([
             ResidualBlock(128),
             ResidualBlock(128)
-        ]
+        ])
         
         self.value = nn.Sequential(
             layer_init(nn.Linear(128, 64)),
