@@ -2,6 +2,8 @@ from cProfile import label
 from glob import glob
 from re import S
 from turtle import color, st
+
+import test
 import Problem
 import TempSheduler
 from DQN.DQN_Models import DQN_NN_V1,DuelingDQN_NN
@@ -14,6 +16,8 @@ import SA
 import torch
 from collections import Counter
 from typing import List
+import os
+import csv
 
 
 def plot_SA_output(lbest_values_list,lcurrent_values_list,ltemp_values_list,dbest_values_list,dcurrent_values_list,dtemp_values_list):
@@ -167,6 +171,23 @@ def compareTempSheduler():
 def make_compareing_test(NUM_TESTS):
     test_result = {}
 
+    def save_flat_sa_results_to_csv(file_path="sa_results.csv"):
+        nonlocal test_result
+        file_exists = os.path.isfile(file_path)
+
+        with open(file_path, mode="a", newline='', encoding="utf-8") as csv_file:
+            writer = csv.writer(csv_file)
+            
+            if not file_exists:
+                writer.writerow(["dim", "ts_name", "bv", "stbv"])
+            
+            for problem_dim, method_results in test_result.items():
+                for method_name, best_result, steps_to_best in method_results:
+                    writer.writerow([problem_dim, method_name, best_result, steps_to_best])
+
+        test_result = {}
+        print(f"✔️ Dane dopisane do pliku: {file_path}")
+
     def collect_run_result(run_result: dict, problem_dimention: int):
         '''
         For a given problem dimension, collect:
@@ -191,7 +212,7 @@ def make_compareing_test(NUM_TESTS):
         if problem_dimention not in test_result:
             test_result[problem_dimention] = []
 
-        test_result[problem_dimention].append(refactored_result)
+        test_result[problem_dimention] += (refactored_result)
 
     DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True)
     # DQN_model = DuelingDQN_NN()
@@ -256,7 +277,8 @@ def make_compareing_test(NUM_TESTS):
                 temp_shadeuling_model=tuple[1])
 
         collect_run_result(run_results,new_problem.getDimention())
-    print(test_result)
+        #if i % 100 == 0:
+        save_flat_sa_results_to_csv()
 
 make_compareing_test(1)
 
