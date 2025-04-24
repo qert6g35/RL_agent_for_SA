@@ -49,7 +49,7 @@ class TSP(Problem):
         #     self.distances = distances
         # else:
         problem = tsplib95.load(self.choose_random_file('TSP_examle'))
-        while problem.dimension > 2000:
+        while problem.dimension >= 1500:
             problem = tsplib95.load(self.choose_random_file('TSP_examle'))
         print("choosed problem with dimention:",problem.dimension)
         self.dim = problem.dimension

@@ -178,54 +178,29 @@ def make_ploting_test():
     DQN_nn_2999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
     DQN_nn_2999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_19_08_34_eps2999'))
 
-    PPO_nn_31206 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    PPO_nn_31206 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n,layer_size=64)
     PPO_nn_31206.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/1/PPO_2025_04_16_20_35_updates31206'))
 
-    PPO_nn_115352 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    PPO_nn_115352 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n,layer_size=64)
     PPO_nn_115352.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/2/PPO_2025_04_17_22_19_updates115352'))
+
+    PPO_nn_6563 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
+    PPO_nn_6563.load_state_dict(torch.load('PPO_2025_04_22_21_52_updates6563'))
+    
 
     NN_TS = [
         ("PPO_update_31k",PPO_nn_31206,SA_ENV.SA_env()),
         ("DDQN_eps_1k",DQN_nn_999,SA_ENV.SA_env()),
         ("PPO_update_115k",PPO_nn_115352,SA_ENV.SA_env()),
         ("DDQN_eps_3k",DQN_nn_2999,SA_ENV.SA_env()),
-    ]
-
-    TS: List[TempSheduler.TempSheduler] = [
-        #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
-        ("Linear",TempSheduler.LinearScheduler_FirstKind(),SA.SA(skip_initialization=True)),
-
-        #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
-        ("ReciprocalV1",TempSheduler.ReciprocalScheduler_FirstKind(),SA.SA(skip_initialization=True)),
-        ("ReciprocalV2",TempSheduler.ReciprocalScheduler_SecondKind(),SA.SA(skip_initialization=True)),
-
-        #TempSheduler.GeometricTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
-        ("GeometricV1",TempSheduler.GeometricScheduler_FirstKind(),SA.SA(skip_initialization=True)),
-        ("GeometricV2",TempSheduler.GeometricScheduler_SecondKind(),SA.SA(skip_initialization=True)),
-
-        #TempSheduler.LogarithmicTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
-        ("LogarithmicV1",TempSheduler.LogarithmicScheduler_FirstKind(),SA.SA(skip_initialization=True)),
-        ("LogarithmicV2",TempSheduler.LogarithmicScheduler_SecondKind(),SA.SA(skip_initialization=True)),     
+        ("PPO_new_6.5k",PPO_nn_6563,SA_ENV.SA_env()),
     ]
 
     new_problem = Problem.TSP()
     initial_solution = new_problem.get_initial_solution()
 
-    # DQN_SA_engine.reset(preset_problem=new_problem,initial_solution=initial_solution)
-    # LinerSA.reset(preset_problem=new_problem,initial_solution=initial_solution)
-
     for nn_tuple in NN_TS:
         nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
-
-    t_max = NN_TS[0][2].starting_temp
-    t_min = NN_TS[0][2].min_temp
-    # LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
-
-    for tuple in TS:
-        tuple[1].reset(t_max,t_min,DQN_SA_engine.max_steps)
-        tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
-
-
 
     run_Best = {}
     run_Current = {}

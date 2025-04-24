@@ -47,14 +47,15 @@ class PPO:
         self.gamma = 0.99
         self.gae_lambda = 0.95
         # parametry związane z lr i jego updatem
-        self.starting_lr = 0.001 
+        self.starting_lr = 0.0001 
+        self.min_lr = self.starting_lr * 0.0001
         self.update_lr = True
         # podstawowe okreslające uczenie
         self.seed = 1
         self.num_envs = 5
         self.num_steps = 128 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = int(200000.0 * SA_env().max_steps / self.num_envs) # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.total_timesteps = 5000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
         self.lr_cycle = int(self.total_timesteps / 6)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
@@ -124,7 +125,7 @@ class PPO:
 
     def save_model(self,updates):
         torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(updates + self.vers_offset))
-        if int(updates%(self.total_timesteps // self.batch_size / 25)) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1)):
+        if int(updates%(self.total_timesteps // self.batch_size / 50)) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1)):
             os.remove(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1))
 
 
@@ -148,7 +149,7 @@ class PPO:
             if self.update_lr:
                 progress = (global_step % self.lr_cycle) / self.lr_cycle
                 cosine_decay = 0.5 * (1 + math.cos(math.pi * progress))
-                updated_lr = self.starting_lr * cosine_decay 
+                updated_lr = max(self.starting_lr * cosine_decay, self.min_lr)
                 #updated_lr = self.starting_lr * (1.0 - (update - 1.0)/ num_updates)
                 self.optimizer.param_groups[0]["lr"] = updated_lr
 

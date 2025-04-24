@@ -9,9 +9,9 @@ def layer_init(layer,std = np.sqrt(2), bias_const = 0.0):
 
 class PPO_NN(nn.Module):
 
-    def __init__(self, envs, obs_num = 0,actions_num = 0):
+    def __init__(self, envs, obs_num = 0,actions_num = 0,layer_size = 128):
         super(PPO_NN,self).__init__()
-        self.layer_size = 128
+        self.layer_size = layer_size
         if envs != None:
             obs_space = np.array(envs.single_observation_space.shape).prod()
             act_space =  envs.single_action_space.n
