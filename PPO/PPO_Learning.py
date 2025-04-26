@@ -55,8 +55,8 @@ class PPO:
         self.num_envs = 5
         self.num_steps = 128 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 5000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
-        self.lr_cycle = int(self.total_timesteps / 6)
+        self.total_timesteps = 25000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.lr_cycle = int(self.total_timesteps / 3)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
@@ -125,7 +125,7 @@ class PPO:
 
     def save_model(self,updates):
         torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(updates + self.vers_offset))
-        if int(updates%(self.total_timesteps // self.batch_size / 50)) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1)):
+        if int(updates%int((self.total_timesteps // self.batch_size) / 25)) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1)):
             os.remove(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1))
 
 
@@ -171,11 +171,13 @@ class PPO:
                 next_obs, next_done = torch.Tensor(next_obs).to(self.device), torch.Tensor(done).to(self.device)
                 
                 if "tr" in info:
+                    #print(info["tr"])
                     for value in info["tr"]:
-                        self.episode_rewards.append(value)
-                        envs_that_need_to_be_reset -= 1
-                        if envs_that_need_to_be_reset == 0:
-                            save_rewards_mean = True
+                        if value != 0:
+                            self.episode_rewards.append(value)
+                            envs_that_need_to_be_reset -= 1
+                            if envs_that_need_to_be_reset == 0:
+                                save_rewards_mean = True
 
                         
 
