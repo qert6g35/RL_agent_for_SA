@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn 
 import torch.optim as optim
 from SA_ENV import SA_env
-from PPO.PPO_Model import PPO_NN
+from PPO.PPO_Model import PPO_NN_v2
 import gymnasium as gym
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
@@ -44,35 +44,35 @@ class PPO:
         #params
         # parametry związane GAE
         self.use_gae = True
-        self.gamma = 0.99
-        self.gae_lambda = 0.95
+        self.gamma = 0.97
+        self.gae_lambda = 0.9
         # parametry związane z lr i jego updatem
-        self.starting_lr = 0.0001 
-        self.min_lr = self.starting_lr * 0.0001
+        self.starting_lr = 0.00035 
+        self.min_lr = 5e-6
         self.update_lr = True
         # podstawowe okreslające uczenie
         self.seed = 1
-        self.num_envs = 5
-        self.num_steps = 128 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
+        self.num_envs = 3
+        self.num_steps = 256 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 25000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
-        self.lr_cycle = int(self.total_timesteps / 3)
+        self.total_timesteps = 50000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.lr_cycle = int(self.total_timesteps / 2)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
         print("total_timesteps:",self.total_timesteps)
-        self.update_epochs = 5 # uwaga tutaj ustalamy, ile razy chcemy przejść przez cały proces uczenia na tych samych danych
+        self.update_epochs = 3 # uwaga tutaj ustalamy, ile razy chcemy przejść przez cały proces uczenia na tych samych danych
 
         self.use_adv_normalization = True # flaga która decyduje czy adventage powinno być normalizowane
 
         #clipping params
-        self.clip_coef = 0.2 # używane do strategi clippingu zaproponowanego w PPO
-        self.clip_vloss = True
+        self.clip_coef = 0.125 # używane do strategi clippingu zaproponowanego w PPO
+        self.clip_vloss = False # ! UWAGA WYŁĄCZLIŚMY BO DEEPSEEK MÓWI ŻE LEPSZE DO RZADKO SPOTYKANYCH NAGRÓD
         self.max_grad_norm = 0.5 # maksymalna zmiana wag w sieci 
 
         #Entropy loss params
-        self.ent_coef = 0.01 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
-        self.vf_coef = 0.5 # w jakim stopniu minimalizujemy value loss w porównaniu do minimalizowania błędu na wyjściu sieci
+        self.ent_coef = 0.05 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
+        self.vf_coef = 0.25 # w jakim stopniu minimalizujemy value loss w porównaniu do minimalizowania błędu na wyjściu sieci
 
         # parametr ograniczający zbyt duże zmiany w kolejnych iteracjach
         self.target_kl = None # defaoult_value = 0.015
@@ -102,7 +102,7 @@ class PPO:
             [ SA_env for _ in range(self.num_envs)]
         )
         
-        self.agent = PPO_NN(self.envs).to(self.device)
+        self.agent = PPO_NN_v2(self.envs).to(self.device)
         if load_agent_path != None:
             self.agent.load_state_dict(torch.load(load_agent_path))
 
@@ -228,7 +228,7 @@ class PPO:
             # # Optimizing the policy and value network
             b_inds = np.arange(self.batch_size)
             clipfracs = [] # debug variable
-            for epoch in range(self.num_of_minibatches):
+            for epoch in range(self.update_epochs):
                 np.random.shuffle(b_inds)
                 for start in range(0, self.batch_size, self.minibatch_size):
                     end = start + self.minibatch_size

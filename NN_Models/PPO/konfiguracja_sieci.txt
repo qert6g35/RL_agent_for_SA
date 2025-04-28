@@ -6,3 +6,127 @@ Uczono na środowisku do 5000 kroków!!!!
 B: nieco zmieniona architektóra PPO 
 
 self.layer_size = 128
+
+Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano )
+        if improvement > 0:
+            reward = self.norm_reward_scale * improvement
+            reward = math.log1p(reward * self.SA.steps_done) * 10
+
+            if self.SA.steps_done > self.max_steps * 0.02:
+                reward = max(2.0,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
+
+        #! spłaszczenie nagrody w początkowym stadium przeszukiwania
+        if self.SA.steps_done < self.reward_lowerd_steps:
+            reward = reward * (self.SA.steps_done/self.reward_lowerd_steps)  
+        
+        teperature_factor = (self.current_temp - self.min_temp) /(self.starting_temp - self.min_temp)
+        self.last_temps.append(teperature_factor)
+
+        #! dodatkowe duże kary za przekroczenie granic temperaturowych
+        range_punhishment = 0
+        if was_temp_lower_than_min:
+            range_punhishment -= 1.0
+        elif self.current_temp > self.starting_temp * 3:
+            punishment = 0.5 * (int(teperature_factor)-1)
+            if punishment > self.norm_reward_scale:
+                punishment = self.norm_reward_scale
+            range_punhishment -= punishment # silna kara za każdą krotność przekroczenia temperatur
+
+        steps_without_solution_correction = self.run_history[-1][3] * self.max_steps
+
+        # znaczne uproszczenie tego jak wygląda poprzednia funkcja okreslająca wa
+        if steps_without_solution_correction > self.max_steps * 0.02:
+            if teperature_factor < 0.2:
+                range_punhishment -= 1.0 + 1.5 * (0.2 - teperature_factor)  #! lekkie wychłodzenie = mała kara
+            elif teperature_factor > 1.5:
+                range_punhishment -= 1.0 + (teperature_factor - 1.5) * 1.5  #! grzanie bez efektu = większa kara
+            else:
+                # w sensownym zakresie i próbujesz – mikro nagroda
+                range_punhishment += 0.5
+        reward += range_punhishment
+        #! kara za stagnacje temperatury, dodatkowo kara zwiększa się aż do 5.0
+        stagnation_punishment = 0
+        if len(self.last_temps) >= self.last_temps.maxlen-1 and np.std(self.last_temps) < 0.012137:
+            if self.stesp_of_stagnation == 0:
+                self.stesp_of_stagnation = len(self.last_temps)-1
+            self.stesp_of_stagnation += 1
+            stagnation_punishment -= min(1.0 * self.stesp_of_stagnation / (len(self.last_temps)*2),2.5)
+        else:
+            self.stesp_of_stagnation = max(0,int(math.sqrt(self.stesp_of_stagnation)) -1)
+            
+        reward += stagnation_punishment
+
+        delta_current_reward = 0
+        #! drobna nagroda za poprawę currentalue v 
+        #! Uwaga nagroda ta jest zwiększona aż do 2.0 ale za to skaluje się z odległością między current a best czyli tym bardziej go nagdzadzamy im bardziej current zbliża się do obecnego best value 
+        delta_current = self.run_history[-1][0] - new_observation[0]
+        if delta_current > 0:
+            delta_current_reward = min(4.0* delta_current ** 0.2,2) * (1 - max(min((new_observation[0] - new_observation[1])*3.0,0.9),0.1))
+        reward += delta_current_reward
+
+        reward = max(min(reward,self.norm_reward_scale),-self.norm_reward_scale)/self.norm_reward_scale
+        if self.SA.steps_done < self.max_steps:
+            is_terminated = False
+        else:
+            is_terminated = True
+            self.done = True
+
+        self.run_history.append( new_observation + [stagnation_punishment/self.norm_reward_scale,delta_current_reward/self.norm_reward_scale,self.current_temp,reward])
+        self.total_reward += reward
+        return new_observation, reward , is_terminated, False, self.info()
+
+
+
+    C   C   C   C   C   C   C   C 
+    zmiana parametrów uczenia 
+    Parameter	Current	Suggested
+    clip_coef	0.2	    0.1
+    ent_coef	0.01	0.05
+    update_epch	5	    3
+    min_lr	    1e-8	1e-6
+    vf_coef 	0.5	    0.25
+    
+    ustawiamy delty na 0 na razie (tak żeby nie dodawać więcej szumu do uczenia !!!!!!!!!! ), 
+    
+    
+    większa sieć PPO_v2
+    
+    
+    ustawiamy dłuższe ucznie 
+
+    PARAMETRY uczenia
+            #params
+        # parametry związane GAE
+        self.use_gae = True
+        self.gamma = 0.97
+        self.gae_lambda = 0.9
+        # parametry związane z lr i jego updatem
+        self.starting_lr = 0.00035 
+        self.min_lr = 5e-6
+        self.update_lr = True
+        # podstawowe okreslające uczenie
+        self.seed = 1
+        self.num_envs = 3
+        self.num_steps = 256 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
+        self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
+        self.total_timesteps = 50000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.lr_cycle = int(self.total_timesteps / 2)
+        # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
+        self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
+        self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
+        print("total_timesteps:",self.total_timesteps)
+        self.update_epochs = 3 # uwaga tutaj ustalamy, ile razy chcemy przejść przez cały proces uczenia na tych samych danych
+
+        self.use_adv_normalization = True # flaga która decyduje czy adventage powinno być normalizowane
+
+        #clipping params
+        self.clip_coef = 0.125 # używane do strategi clippingu zaproponowanego w PPO
+        self.clip_vloss = False # ! UWAGA WYŁĄCZLIŚMY BO DEEPSEEK MÓWI ŻE LEPSZE DO RZADKO SPOTYKANYCH NAGRÓD
+        self.max_grad_norm = 0.5 # maksymalna zmiana wag w sieci 
+
+        #Entropy loss params
+        self.ent_coef = 0.05 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
+        self.vf_coef = 0.25 # w jakim stopniu minimalizujemy value loss w porównaniu do minimalizowania błędu na wyjściu sieci
+
+        # parametr ograniczający zbyt duże zmiany w kolejnych iteracjach
+        self.target_kl = None # defaoult_value = 0.015
