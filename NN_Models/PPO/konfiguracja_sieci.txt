@@ -7,7 +7,7 @@ B: nieco zmieniona architektóra PPO
 
 self.layer_size = 128
 
-Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano )
+Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd duże zmoany (szum))
         if improvement > 0:
             reward = self.norm_reward_scale * improvement
             reward = math.log1p(reward * self.SA.steps_done) * 10
