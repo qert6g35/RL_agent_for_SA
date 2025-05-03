@@ -46,20 +46,20 @@ class SA:
             self.best_solution = new_solution
             self.best_solution_value = new_solution_value
 
-    def step(self,temp_value:float):
+    def step(self,temp_value:float,steps_per_temperature = 1):
+        for _ in range(steps_per_temperature):
+            #get random neighbor
+            new_solution = self.problem.get_random_neighbor(self.current_solution)
+            new_solution_value = self.problem.objective_function(new_solution)
 
-        #get random neighbor
-        new_solution = self.problem.get_random_neighbor(self.current_solution)
-        new_solution_value = self.problem.objective_function(new_solution)
-
-        #check if new solution is better than current
-        if self.problem.isFirstBetter(new_solution_value,self.current_solution_value):
-            self.acceptNewSolution(new_solution,new_solution_value)
-        else:
-            if random.random() < math.exp(-(new_solution_value - self.current_solution_value)/temp_value):
+            #check if new solution is better than current
+            if self.problem.isFirstBetter(new_solution_value,self.current_solution_value):
                 self.acceptNewSolution(new_solution,new_solution_value)
+            else:
+                if random.random() < math.exp(-(new_solution_value - self.current_solution_value)/temp_value):
+                    self.acceptNewSolution(new_solution,new_solution_value)
 
-        self.steps_done += 1
+            self.steps_done += 1
 
     def run(self, max_steps:int, temp_shadeuling_model:TempSheduler,generate_plot_data = False):
         best_values = []

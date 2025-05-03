@@ -130,3 +130,32 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
 
         # parametr ograniczający zbyt duże zmiany w kolejnych iteracjach
         self.target_kl = None # defaoult_value = 0.015
+
+
+
+
+
+        D   D   D   D D   D   D   D
+
+        UCZENIE BEZ INFO O HISTORII CZEGOKOLWIEK NIE MA SENSU 
+
+        OBS:
+        DODAJEMY HISTORIE TEMPERATURY W POSTACI: mean, std5,std25,trend5,trend25
+
+        Zmiana sterowania:
+        self.current_temp += self.starting_temp * (self.actions[action_number] - 1 )#= 0.9 * self.current_temp * self.actions[action_number] + self.current_temp * 0.1
+        if self.current_temp < self.min_temp:
+            was_temp_lower_than_min = True
+            self.current_temp = self.min_temp
+
+
+        NAGRODA:
+        Eliminujemy karę za zbyt niską temperaturę (ta kara zbyt ogranicza agenta!!!!) wychąłdzanie to nic złego jak pokazują inne strategie
+
+
+        E   E   E   E   E   E   E   E   E   E   E
+
+        Test czy zwiększenie steps per temperature do 10 zwiększy skutecznosc sieci
+
+
+

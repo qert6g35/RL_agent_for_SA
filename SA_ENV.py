@@ -17,27 +17,43 @@ import matplotlib.pyplot as plt
 #SA enviroment devined for DQN
 class SA_env(gym.Env):
 
-    def __init__(self,preset_problem = None,set_up_learning_on_init = False,use_observation_divs = True):
+    def __init__(self,preset_problem = None,set_up_learning_on_init = False,use_observation_divs = False,use_time_temp_info = True,use_new_lower_actions = True):
         # elements that shouldn't change when SA is changed
         self.max_temp_accepting_chance = 0.85
         self.min_temp_accepting_chance = 0.001
-        self.actions = [float(f) * 0.01 for f in range(80,121,4)]
+        if use_new_lower_actions:
+            self.actions = [float(f) * 0.01 for f in range(95,106,1)]#[0.85, 0.88, 0.91, 0.9400000000000001, 0.97, 1.0, 1.03, 1.06, 1.09, 1.12, 1.1500000000000001]
+        else:
+            self.actions = [float(f) * 0.01 for f in range(80,121,4)]#[0.8, 0.84, 0.88, 0.92, 0.96, 1.0, 1.04, 1.08, 1.12, 1.16, 1.2]
         self.action_space = gym.spaces.Discrete(len(self.actions))
         self.max_steps = 10000
         self.reward_lowerd_steps = 0.03 * self.max_steps
         self.total_reward = 0
         self.done = False
         self.use_observation_divs =use_observation_divs
+        self.use_time_temp_info = use_time_temp_info
         self.stesp_of_stagnation = 0
         self.stesp_of_noice = 0
+        self.steps_per_temp = 10
         #print("there will be no reward for first steps:",self.no_reward_steps)
         
         self.run_history = []
         self.norm_reward_scale = 10.0
-        self.last_temps = deque([],maxlen=int(max(8,self.max_steps*0.0025)))
+        self.temp_history_size = 50
+        self.temp_short_size = 10
+        self.steps_per_temp_change = 10
+        self.last_temps = deque([0 for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
 
-        low = np.array([0, 0, 0, 0, 0,-1,-1], dtype=np.float32)
-        high = np.array([1, 1, 1, 1, 100,1,1], dtype=np.float32) #! uwaga możliwe że trzeba będzie określić maksymalną temperaturę dla środowiska
+        l = [0, 0, 0, 0, 0]
+        h = [1, 1, 1, 1, 1]
+        if use_observation_divs:
+            l += [-1,-1]
+            h += [1,1]
+        if use_time_temp_info:
+            l += [0,0,0,-1,-1]
+            h += [1,1,1,1,1]
+        low = np.array(l, dtype=np.float32)
+        high = np.array(h, dtype=np.float32) 
         self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
 
         #extra elements
@@ -65,7 +81,7 @@ class SA_env(gym.Env):
             #print("we have min temp:",self.min_temp)
             self.current_temp = self.starting_temp
             self.run_history.append(self.observation() + [self.current_temp,0])
-            self.last_temps = deque([],maxlen=int(max(8,self.max_steps*0.0025)))
+            self.last_temps = deque([self.starting_temp for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
         else:
             self.SA = None
             self.starting_temp = 0.0
@@ -91,7 +107,8 @@ class SA_env(gym.Env):
         self.stesp_of_stagnation
         self.max_steps = self.estimate_sa_steps()
         self.reward_lowerd_steps = 0.05 * self.max_steps
-        self.last_temps = deque([],maxlen=int(max(8,self.max_steps*0.0025)))
+        
+        self.last_temps = deque([self.starting_temp for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
         #print("we have starting temp:",self.starting_temp)
         #print("we have min temp:",self.min_temp)
         self.current_temp = self.starting_temp
@@ -99,39 +116,38 @@ class SA_env(gym.Env):
         self.stesp_of_stagnation = 0 
 
         #! zaawansowane plotowanie na potrzeby oprzedstawienia temperatury i przebiegu poprzedniej instacjni 
-        if(len(self.run_history)>10):
-            fig, axs = plt.subplots(3, 3, figsize=(8, 15))
-            axs[0][0].plot([x[0] for x in self.run_history], color='blue',label = "current")
-            axs[0][0].plot([x[1] for x in self.run_history], color='green',label = "current")
+        # if(len(self.run_history)>10):
+        #     fig, axs = plt.subplots(3, 3, figsize=(8, 15))
+        #     axs[0][0].plot([x[0] for x in self.run_history], color='blue',label = "current")
+        #     axs[0][0].plot([x[1] for x in self.run_history], color='green',label = "current")
      
-            axs[1][0].plot([x[-2] for x in self.run_history], color='green',label = "temp") 
+        #     axs[1][0].plot([x[-2] for x in self.run_history], color='green',label = "temp") 
 
-            axs[2][0].plot([x[0] - x[1] for x in self.run_history], color='red',label = "curent - best")
-
-            axs[0][1].plot([x[-1] for x in self.run_history], color='red',label = "reward")
-            axs[0][1].set_ylim(-1, 1)
+        #     axs[2][0].plot([x[0] - x[1] for x in self.run_history], color='red',labelS
+        #     axs[0][1].plot([x[-1] for x in self.run_history], color='red',label = "reward")
+        #     axs[0][1].set_ylim(-1, 1)
             
-            axs[1][1].plot([x[-3] for x in self.run_history], color='red',label = "delta_current")
-            axs[1][1].set_ylim(-1, 1)
+        #     axs[1][1].plot([x[-3] for x in self.run_history], color='green',label = "good_trends ")
+        #     axs[1][1].set_ylim(-1, 1)
 
-            axs[2][1].plot([x[-4] for x in self.run_history], color='red',label = "stagnation reward")
-            axs[2][1].set_ylim(-1, 1)
+        #     axs[2][1].plot([x[-4] for x in self.run_history], color='red',label = "stagnation reward")
+        #     axs[2][1].set_ylim(-1, 1)
 
-            axs[1][2].plot([x[-5] for x in self.run_history], color='red',label = "(main) improvment reward")
-            axs[1][2].set_ylim(-1, 1)
+        #     axs[1][2].plot([x[-5] for x in self.run_history], color='red',label = "too fast changes")
+        #     axs[1][2].set_ylim(-1, 1)
 
-            axs[2][2].plot([x[-6] for x in self.run_history], color='red',label = "is too nocey")
-            axs[2][2].set_ylim(-1, 1)
+        #     axs[2][2].plot([x[-6] for x in self.run_history], color='blue',label = "is too nocey")
+        #     axs[2][2].set_ylim(-1, 1)
 
-            axs[0][2].plot([x[-4] for x in self.run_history], color='red',label = "stagnation reward")
-            axs[0][2].plot([x[-6] for x in self.run_history], color='blue',label = "is too nocey")
-            axs[0][2].set_ylim(-1, 1)
+        #     axs[0][2].plot([x[-4] for x in self.run_history], color='red',label = "stagnation reward")
+        #     axs[0][2].plot([x[-6] for x in self.run_history], color='blue',label = "is too nocey")
+        #     axs[0][2].set_ylim(-1, 1)
             
-            fig.legend()
-            # Dostosowanie wyglądu
+        #     fig.legend()
+        #     # Dostosowanie wyglądu
 
-            plt.tight_layout()
-            plt.show()
+        #     plt.tight_layout()
+        #     plt.show()
 
         obs = self.observation()
         self.run_history = [obs + [self.current_temp,0]]
@@ -141,7 +157,7 @@ class SA_env(gym.Env):
 
     def step(self,action_number):
         was_temp_lower_than_min = False
-        self.current_temp = 0.9 * self.current_temp * self.actions[action_number] + self.current_temp * 0.1
+        self.current_temp += self.starting_temp * (self.actions[action_number] - 1 )#= 0.9 * self.current_temp * self.actions[action_number] + self.current_temp * 0.1
         if self.current_temp < self.min_temp:
             was_temp_lower_than_min = True
             self.current_temp = self.min_temp
@@ -149,15 +165,20 @@ class SA_env(gym.Env):
         if self.current_temp > self.starting_temp*10:
             self.current_temp = self.starting_temp*10
 
-        self.SA.step(self.current_temp)
+        teperature_factor = (self.current_temp - self.min_temp) /(self.starting_temp - self.min_temp)
+        self.last_temps.append(min(teperature_factor,2.0)/2.0)
+
+        #for _ in range(self.steps_per_temp_change): # = 10
+        self.SA.step(self.current_temp,steps_per_temperature=self.steps_per_temp)
         new_observation = self.observation()
+            #self.run_history.append( new_observation + self.run_history[-1][-6:])
 
         improvement = abs( self.run_history[-1][1] - new_observation[1] )
         reward = 0.0
         
         if improvement > 0:
             reward = self.norm_reward_scale * improvement
-            reward = math.log1p(reward * self.SA.steps_done) * 10
+            reward = math.log1p(reward * self.SA.steps_done) * 2
 
             if self.SA.steps_done > self.max_steps * 0.02:
                 reward = max(2.0,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
@@ -168,52 +189,28 @@ class SA_env(gym.Env):
         if self.SA.steps_done < self.reward_lowerd_steps:
             reward = reward * (self.SA.steps_done/self.reward_lowerd_steps)  
         
-        teperature_factor = (self.current_temp - self.min_temp) /(self.starting_temp - self.min_temp)
-        self.last_temps.append(teperature_factor)
+        
 
-        #! dodatkowe duże kary za przekroczenie granic temperaturowych
+        #! kary za przekroczenie granic temperaturowych
         range_punhishment = 0
         if was_temp_lower_than_min:
             range_punhishment -= 1.0
-        elif self.current_temp > self.starting_temp * 3:
+        elif teperature_factor >= 2:
             punishment = 0.5 * (int(teperature_factor)-1)
             if punishment > self.norm_reward_scale:
                 punishment = self.norm_reward_scale
             range_punhishment -= punishment # silna kara za każdą krotność przekroczenia temperatur
+        else:
+            range_punhishment += 0.05 # śladowa nagroda za pozostawanie w dobrym zakreśie
 
-        steps_without_solution_correction = self.run_history[-1][3] * self.max_steps
-
-        # znaczne uproszczenie tego jak wygląda poprzednia funkcja okreslająca wa
-        if steps_without_solution_correction > self.max_steps * 0.02:
-            if teperature_factor < 0.2:
-                range_punhishment -= 1.0 + 1.5 * (0.2 - teperature_factor)  #! lekkie wychłodzenie = mała kara
-            elif teperature_factor > 1.5:
-                range_punhishment -= 1.0 + (teperature_factor - 1.5) * 1.5  #! grzanie bez efektu = większa kara
-            else:
-                # w sensownym zakresie i próbujesz – mikro nagroda
-                range_punhishment += 0.5
         reward += range_punhishment
-        #! kara za stagnacje temperatury, dodatkowo kara zwiększa się aż do 5.0
-        stagnation_punishment = 0
-        if len(self.last_temps) >= self.last_temps.maxlen-1 and np.std(self.last_temps) < 0.0152137:
-            if self.stesp_of_stagnation <= 0:
-                self.stesp_of_stagnation = len(self.last_temps)-1
-            self.stesp_of_stagnation += 1
-            stagnation_punishment -= min(1.0 * self.stesp_of_stagnation / (len(self.last_temps)*25),2)
-        else:
-            self.stesp_of_stagnation = max(0,int(self.stesp_of_noice/2) -1)
-        #! kara za zbyt duży szum !
-        too_nocey_punnishment = 0   
-        if len(self.last_temps) >= self.last_temps.maxlen-1 and np.std(self.last_temps) > 0.1 :
-            if self.stesp_of_noice <= 0:
-                self.stesp_of_noice = len(self.last_temps)-1
-            self.stesp_of_noice += 1
-            too_nocey_punnishment -= min(1.0 * self.stesp_of_noice / (len(self.last_temps)*5),2)
-        else:
-            self.stesp_of_noice = max(0,int(self.stesp_of_noice/2) -1)
+
+        stagnation_punishment, too_nocey_punnishment = self.getStagnationAndNoicePunishments(new_observation)
             
         reward += stagnation_punishment + too_nocey_punnishment
 
+        # ! pozostałość po każe za kroki bez poprawy 
+        #steps_without_solution_correction = self.run_history[-1][3] * self.max_steps
         # if (teperature_factor <= 2):
         #     if (teperature_factor < 0.09):
         #         reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
@@ -223,15 +220,35 @@ class SA_env(gym.Env):
         #         reward += max(15 - 30*(steps_without_solution_correction-self.max_steps*0.02)/self.max_steps,-1)  # NAGRADZAMY GO JAK PRUBUJE SZYKAĆ NOWYCH ROZWIĄZAŃ GDY DAWNO CZEGOS NIE ZNALEŹLIŚMY !!!!!!!
         # else:
         #     reward -= (steps_without_solution_correction/self.max_steps*10) # tej sytuacji nie chcemy dodatkowo obciążać bo i tak mamy karę za zbyt dużą temperaturę 
+        #? tutaj właściwa postać tej kary
+        reward -= new_observation[3] * 2 # ten wsp już jest znormalizowany więc kara rośnie aż do 1 (ale dowolna poprawa max value zresetuje tą karę)
+
+        #!! kara za zbyt gwałtowne zmiany
+        too_fast_changes = 0
+        if self.use_time_temp_info:
+            if new_observation[-4]>0.0345: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                too_fast_changes -= 1
+        reward += too_fast_changes
+
+        #? nagroda za zgodne trendy
+        good_trends = 0
+        if self.use_time_temp_info:
+            if (new_observation[-1]>0 and new_observation[-2]>0) or (new_observation[-1]<0 and new_observation[-2]<0): #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                good_trends += 0.05
+ 
         delta_current_reward = 0
         #! drobna nagroda za poprawę currentalue v 
-        #! Uwaga nagroda ta jest zwiększona aż do 2.0 ale za to skaluje się z odległością między current a best czyli tym bardziej go nagdzadzamy im bardziej current zbliża się do obecnego best value 
+        #! Uwaga nagroda ta jest zwiększona aż do 0.5 ale za to skaluje się z odległością między current a best czyli tym bardziej go nagdzadzamy im bardziej current zbliża się do obecnego best value )
+        #! Zostałą zmniejszona za to że agent ją zbyt często grindował
         delta_current = self.run_history[-1][0] - new_observation[0]
         if delta_current > 0:
             #print("adding mini_reward for good exploration direction:",min(2.0* delta_current ** 0.3,0.5))
             #print("how far is new_current to new_best",(new_observation[0] - new_observation[1]))
-            delta_current_reward = min(3.0* delta_current ** 0.2,1) * (1 - max(min((new_observation[0] - new_observation[1])*5.0,0.9),0.1))
+            delta_current_reward = min(delta_current ** 0.2,0.25) * (1 - max(min((new_observation[0] - new_observation[1])*5.0,0.9),0.1))
         reward += delta_current_reward
+
+        #! nagroda za trzymanie się trendu i odbijanie się od granic 
+        #if 
 
         #! TO MOŻE NAM POMÓC Z OGARNIĘĆIEM WYBUCHAJĄCYCH WARTOŚCI PRZY STEROWANIU
         # normalizacja nagrody
@@ -244,11 +261,50 @@ class SA_env(gym.Env):
         else:
             is_terminated = True
             self.done = True
-
-        self.run_history.append( new_observation + [too_nocey_punnishment/self.norm_reward_scale,improvment_reward/self.norm_reward_scale,stagnation_punishment/self.norm_reward_scale,delta_current_reward/self.norm_reward_scale,self.current_temp,reward])
+        #[self.current_temp,reward])#
+        self.run_history.append( new_observation + [too_nocey_punnishment/self.norm_reward_scale,too_fast_changes/self.norm_reward_scale,stagnation_punishment/self.norm_reward_scale,good_trends/self.norm_reward_scale,self.current_temp,reward])
         self.total_reward += reward
         return new_observation, reward , is_terminated, False, self.info()
 
+
+    def getStagnationAndNoicePunishments(self,observation):
+        stagnation_punishment = 0
+        too_nocey_punnishment = 0 
+        if self.use_time_temp_info:
+            #! kara za stagnacje temperatury, nie za duża ale taka statystyczna i powolna
+            if self.SA.steps_done >= self.temp_history_size and observation[-3] < 0.0122137:#obs + [temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                if self.stesp_of_stagnation <= 0:
+                    self.stesp_of_stagnation = self.temp_history_size-1
+                self.stesp_of_stagnation += 1
+                stagnation_punishment -= min(1.0 * self.stesp_of_stagnation / (len(self.last_temps)*25),0.5)
+            else:
+                self.stesp_of_stagnation = max(0,int(self.stesp_of_noice/2) -1)
+            #! kara za zbyt duży szum ! (czy ta kara ma sens ?) 
+            if self.SA.steps_done >= self.temp_history_size and observation[-3] > 0.1 :
+                if self.stesp_of_noice <= 0:
+                    self.stesp_of_noice = 4
+                self.stesp_of_noice += 1
+                too_nocey_punnishment -= min(1.0 * self.stesp_of_noice / (len(self.last_temps)*5),2)
+            else:
+                self.stesp_of_noice = max(0,int(self.stesp_of_noice/2) -1)
+        else:
+            #! kara za stagnacje temperatury, nie za duża ale taka statystyczna i powolna
+            if self.SA.steps_done >= self.temp_history_size and np.std(self.last_temps) < 0.0122137:
+                if self.stesp_of_stagnation <= 0:
+                    self.stesp_of_stagnation = len(self.last_temps)-1
+                self.stesp_of_stagnation += 1
+                stagnation_punishment -= min(1.0 * self.stesp_of_stagnation / (len(self.last_temps)*25),0.5)
+            else:
+                self.stesp_of_stagnation = max(0,int(self.stesp_of_noice/2) -1)
+            #! kara za zbyt duży szum ! (czy ta kara ma sens ?)
+            if self.SA.steps_done >= self.temp_history_size and np.std(list(self.last_temps)[:-self.temp_short_size]) > 0.1 :
+                if self.stesp_of_noice <= 0:
+                    self.stesp_of_noice = len(self.last_temps)-1
+                self.stesp_of_noice += 1
+                too_nocey_punnishment -= min(1.0 * self.stesp_of_noice / (len(self.last_temps)*5),2)
+            else:
+                self.stesp_of_noice = max(0,int(self.stesp_of_noice/2) -1)
+        return stagnation_punishment ,too_nocey_punnishment 
     
     def getFullParametersHistory(self):
         return self.run_history
@@ -279,17 +335,25 @@ class SA_env(gym.Env):
             (self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp), # dodatkowa normalizacja tempreatury. z racji na to że zakres temperatury tez jest dobierany zaleznie od zadania 
             ]
         
-        if self.use_observation_divs:
+        if self.use_observation_divs: # dodnie informacji o różnicach LOL bez sensu za mało info a wprowadza tylko ekstra szum
             if not self.run_history:
                 pre_csv = 0
-                pre_temp = 0#(self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp)
+                pre_temp = (self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp)
             else:
-                pre_csv = 0#self.run_history[-1][0]
-                pre_temp = 0#self.run_history[-1][4]
+                pre_csv = self.run_history[-1][0]
+                pre_temp = self.run_history[-1][4]
 
             obs.append(pre_csv - self.SA.current_solution_value * normalize_factor) #! dodatkowa różnica curent value od ostatniego kroku (jest dodatnia jak mamy poprawę)
             obs.append((self.current_temp - self.min_temp)/(self.starting_temp - self.min_temp) - pre_temp) #! dodatkowa różnica curent TEMPERATURE od ostatniego kroku
-            
+        
+        if self.use_time_temp_info:
+            temp_mean = np.mean(self.last_temps)
+            temp_std_full = np.std(self.last_temps)
+            temp_std_fresh = np.std(list(self.last_temps)[-self.temp_short_size:])
+            temp_trend_full = np.polyfit(range(len(self.last_temps)), self.last_temps, 1)[0]
+            temp_trend_fresh = np.polyfit(range(self.temp_short_size), list(self.last_temps)[-self.temp_short_size:], 1)[0]
+            obs = obs + [temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+
         return obs
     
     def getStepsWithoutCorrection(self,new_best_value:float = None):
@@ -311,13 +375,13 @@ class SA_env(gym.Env):
     def estimate_sa_steps(self):
         n = self.SA.problem.dim
         if n < 100:
-            alpha = 8.0
+            alpha = 10.0
         elif n < 200:
-            alpha = 6.0
+            alpha = 8.0
         elif n < 500:
-            alpha = 4.5
+            alpha = 5
         elif n < 1000:
-            alpha = 3.0
+            alpha = 4.0
         else:
             alpha = 2.0
         return int(alpha * (n ** 1.5))
@@ -340,11 +404,14 @@ class SA_env(gym.Env):
                     self.current_temp = self.starting_temp * 10
             
             #perform SA step
-            self.SA.step(self.current_temp)
+            self.SA.step(self.current_temp,steps_per_temperature=self.steps_per_temp)
 
             #collecting data
             self.run_history.append( obs + [self.current_temp,0])
             obs = self.observation()
+
+            if t%int(self.max_steps/10) == 0 :
+                print("test proges",t,"/",self.max_steps)
 
             if self.SA.steps_done == self.max_steps:
                 break

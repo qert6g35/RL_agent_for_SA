@@ -7,7 +7,7 @@ import test
 import Problem
 import TempSheduler
 from DQN.DQN_Models import DQN_NN_V1,DuelingDQN_NN
-from PPO.PPO_Model import PPO_NN
+from PPO.PPO_Model import PPO_NN,PPO_NN_v2
 import SA_ENV as SA_ENV
 import Problem
 import TempSheduler
@@ -169,7 +169,7 @@ def compareTempSheduler():
     plt.show()
 
 def make_ploting_test():
-    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True)
+    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True,use_observation_divs=True,use_time_temp_info=False)
     # DQN_model = DuelingDQN_NN()
 
     # DQN_nn_999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
@@ -188,12 +188,12 @@ def make_ploting_test():
     # PPO_nn_6563.load_state_dict(torch.load('PPO_2025_04_22_21_52_updates6563'))
 
     NN_TS = [
-        ("PPO_0.3k",PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("PPO_14k",PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("PPO_29k",PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("POO_43k",PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("POO_58k",PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("POO_72k",PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env())
+        ("PPO_1k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
+        ("PPO_10k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
+        ("PPO_15k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
+        ("POO_20k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
+        ("POO_27k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
+        ("POO_32k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False))
         # ("PPO_update_31k",PPO_nn_31206,SA_ENV.SA_env()),
         # ("DDQN_eps_1k",DQN_nn_999,SA_ENV.SA_env()),
         # ("PPO_update_115k",PPO_nn_115352,SA_ENV.SA_env()),
@@ -201,12 +201,12 @@ def make_ploting_test():
         # ("PPO_new_6.5k",PPO_nn_6563,SA_ENV.SA_env()),
     ]
 
-    NN_TS[0][1].load_state_dict(torch.load('PPO_2025_04_24_16_35_updates312'))
-    NN_TS[1][1].load_state_dict(torch.load('PPO_2025_04_24_16_35_updates1406'))
-    NN_TS[2][1].load_state_dict(torch.load('PPO_2025_04_24_16_35_updates1406'))
-    NN_TS[3][1].load_state_dict(torch.load('PPO_2025_04_24_16_35_updates1406'))
-    NN_TS[4][1].load_state_dict(torch.load('PPO_2025_04_24_16_35_updates1406'))
-    NN_TS[5][1].load_state_dict(torch.load('PPO_2025_04_24_16_35_updates1406'))
+    NN_TS[0][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates1301'))
+    NN_TS[1][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates10415'))
+    NN_TS[2][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates15623'))
+    NN_TS[3][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates20831'))
+    NN_TS[4][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates27341'))
+    NN_TS[5][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates32552'))
 
 
     new_problem = Problem.TSP()
@@ -214,12 +214,15 @@ def make_ploting_test():
 
     for nn_tuple in NN_TS:
         nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
+        print("starting temp:",nn_tuple[2].starting_temp)
+        print("min temp:",nn_tuple[2].min_temp)
 
     run_Best = {}
     run_Current = {}
     run_Temp = {}
 
     for tuple in NN_TS:
+        print("RUNNING TEST",tuple[0])
         run_Best[tuple[0]],run_Current[tuple[0]],run_Temp[tuple[0]] = tuple[2].runTest(model=tuple[1],generate_plot_data=True)
 
     for key in run_Best:
@@ -298,27 +301,14 @@ def make_compareing_test(NUM_TESTS):
 
         test_result[problem_dimention] += (refactored_result)
 
-    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True)
+    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True,use_observation_divs=True,use_time_temp_info=False)
     # DQN_model = DuelingDQN_NN()
 
-    DQN_nn_999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
-    DQN_nn_999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_17_01_04_eps999'))
-
-    DQN_nn_2999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
-    DQN_nn_2999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_19_08_34_eps2999'))
-
-    PPO_nn_31206 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
-    PPO_nn_31206.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/1/PPO_2025_04_16_20_35_updates31206'))
-
-    PPO_nn_115352 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
-    PPO_nn_115352.load_state_dict(torch.load('NN_Models/PPO/A/Smart_TSP/2/PPO_2025_04_17_22_19_updates115352'))
-
     NN_TS = [
-        ("PPO_update_31k",PPO_nn_31206,SA_ENV.SA_env()),
-        ("DDQN_eps_1k",DQN_nn_999,SA_ENV.SA_env()),
-        ("PPO_update_115k",PPO_nn_115352,SA_ENV.SA_env()),
-        ("DDQN_eps_3k",DQN_nn_2999,SA_ENV.SA_env()),
+        ("POO_32k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False))
     ]
+
+    NN_TS[0][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates32552'))
 
     TS: List[TempSheduler.TempSheduler] = [
         #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
@@ -367,9 +357,9 @@ def make_compareing_test(NUM_TESTS):
             run_results[tuple[0]] = tuple[2].run(
                 max_steps=DQN_SA_engine.max_steps, 
                 temp_shadeuling_model=tuple[1])
-
+        
         collect_run_result(run_results,new_problem.getDimention())
-        if i % 25 == 0:
+        if i % 1 == 0:
             save_flat_sa_results_to_csv()
 
 make_ploting_test()
