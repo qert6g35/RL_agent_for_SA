@@ -86,7 +86,7 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
     min_lr	    1e-8	1e-6
     vf_coef 	0.5	    0.25
     
-    ustawiamy delty na 0 na razie (tak żeby nie dodawać więcej szumu do uczenia !!!!!!!!!! ), 
+    ustawiamy delty na 0 na razie (tak żeby nie dodawać więcej szumu do uczenia (to chyba był błąd można sprubować teraz przeuczyć tą sieć gla poprawnych wartości w deltach ale raczej ta sieć na nie wiele się już nada)), 
     
     
     większa sieć PPO_v2
@@ -137,10 +137,6 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
 
         D   D   D   D D   D   D   D
 
-        UCZENIE BEZ INFO O HISTORII CZEGOKOLWIEK NIE MA SENSU 
-
-        OBS:
-        DODAJEMY HISTORIE TEMPERATURY W POSTACI: mean, std5,std25,trend5,trend25
 
         Zmiana sterowania:
         self.current_temp += self.starting_temp * (self.actions[action_number] - 1 )#= 0.9 * self.current_temp * self.actions[action_number] + self.current_temp * 0.1
@@ -154,6 +150,11 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
 
 
         E   E   E   E   E   E   E   E   E   E   E
+
+        UCZENIE BEZ INFO O HISTORII CZEGOKOLWIEK NIE MA SENSU 
+
+        OBS:
+        DODAJEMY HISTORIE TEMPERATURY W POSTACI: mean, std5,std25,trend5,trend25
 
         Test czy zwiększenie steps per temperature do 10 zwiększy skutecznosc sieci
 

@@ -169,9 +169,11 @@ def compareTempSheduler():
     plt.show()
 
 def make_ploting_test():
-    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True,use_observation_divs=True,use_time_temp_info=False)
+    env7 = SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)
+    env10 = SA_ENV.SA_env()
     # DQN_model = DuelingDQN_NN()
-
+    print(env7.observation_space.shape[0])
+    print(env10.observation_space.shape[0])
     # DQN_nn_999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
     # DQN_nn_999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_17_01_04_eps999'))
 
@@ -188,12 +190,12 @@ def make_ploting_test():
     # PPO_nn_6563.load_state_dict(torch.load('PPO_2025_04_22_21_52_updates6563'))
 
     NN_TS = [
-        ("PPO_1k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
-        ("PPO_10k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
-        ("PPO_15k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
-        ("POO_20k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
-        ("POO_27k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)),
-        ("POO_32k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False))
+        ("PPO_E_10SPT_12k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env(steps_per_temp=10)),
+        ("PPO_E_10SPT_18k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env(steps_per_temp=10)),
+        ("PPO_E_10SPT_24k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env(steps_per_temp=10)),
+        ("PPO_D_16k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_D_24k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_D_32k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env())
         # ("PPO_update_31k",PPO_nn_31206,SA_ENV.SA_env()),
         # ("DDQN_eps_1k",DQN_nn_999,SA_ENV.SA_env()),
         # ("PPO_update_115k",PPO_nn_115352,SA_ENV.SA_env()),
@@ -201,12 +203,12 @@ def make_ploting_test():
         # ("PPO_new_6.5k",PPO_nn_6563,SA_ENV.SA_env()),
     ]
 
-    NN_TS[0][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates1301'))
-    NN_TS[1][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates10415'))
-    NN_TS[2][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates15623'))
-    NN_TS[3][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates20831'))
-    NN_TS[4][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates27341'))
-    NN_TS[5][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates32552'))
+    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates12931'))
+    NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates18651'))
+    NN_TS[2][1].load_state_dict(torch.load('NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392'))
+    NN_TS[3][1].load_state_dict(torch.load('NN_Models/PPO/D/PPO_2025_05_01_22_35_updates16925'))
+    NN_TS[4][1].load_state_dict(torch.load('NN_Models/PPO/D/PPO_2025_05_01_22_35_updates24737'))
+    NN_TS[5][1].load_state_dict(torch.load('NN_Models/PPO/D/PPO_2025_05_01_22_35_updates32552'))
 
 
     new_problem = Problem.TSP()
@@ -231,6 +233,7 @@ def make_ploting_test():
         fig, axs = plt.subplots(3, 1, figsize=(8, 10))
 
         # Wykresy
+        print(key,"score:",run_Best[key][-1])
         axs[0].plot(run_Best[key], color='blue')
         axs[0].set_title(key)
 

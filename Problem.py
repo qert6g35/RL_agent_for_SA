@@ -2,9 +2,12 @@ from abc import ABC, abstractmethod
 from typing import Any
 import random
 import os
+from torch import randint
 import tsplib95
 import networkx as nx
 import numpy as np
+import random as r
+import math
 
 class Problem(ABC):
     """Abstract base class for an optimization problem."""
@@ -44,44 +47,50 @@ class Problem(ABC):
 
 class TSP(Problem):
     #its TSP with returns
-    def __init__(self):
+    def __init__(self,generation_dim = 0,range = [50,300]):
         # if distances is not None:
         #     self.distances = distances
         # else:
-        problem = tsplib95.load(self.choose_random_file('TSP_examle'))
-        while problem.dimension >= 1000:
+        if len(range) == 2:
+            generation_dim = r.randint(range[0],range[1])
+        if generation_dim == 0:
             problem = tsplib95.load(self.choose_random_file('TSP_examle'))
-        print("choosed problem with dimention:",problem.dimension)
-        self.dim = problem.dimension
-        self.graph = problem.get_graph(normalize=True)
+            while problem.dimension >= 1000:
+                problem = tsplib95.load(self.choose_random_file('TSP_examle'))
+            print("choosed problem with dimention:",problem.dimension)
+            self.dim = problem.dimension
+            self.graph = problem.get_graph(normalize=True)
+        else:
+            self.dim = generation_dim
+            self.graph = self.generate_tsp_graph()
+        
         self.upperBound = None
-        self.use_smart_neighbour = True
+        self.use_smart_neighbour = False
         super().__init__()
 
     def objective_function(self, x: Any) -> float:
-        return sum([self.graph.edges[x[len(x)-1],x[0]]["weight"]]+[self.graph.edges[x[i],x[i+1]]["weight"] for i in range(len(x)-1)])
+        return sum([self.graph.edges[x[-1],x[0]]["weight"]] + [self.graph.edges[x[i],x[i+1]]["weight"] for i in range(len(x)-1)])
     
     def get_initial_solution(self):
-        initial_solution = [f for f in range(len(self.graph.nodes))]
+        initial_solution = [f for f in range(self.dim)]
         random.shuffle(initial_solution)
         return initial_solution
     
     def get_random_neighbor(self, x: Any):
-        swap_place_a = random.randint(0,len(x))
-        swap_place_b = random.randint(0,len(x))
-        while swap_place_a == swap_place_b or swap_place_a+1 == swap_place_b or swap_place_a-1 == swap_place_b:
-            swap_place_b = random.randint(0,len(x))
-        # smart neighbour devinition 
         if self.use_smart_neighbour:
+            swap_place_a = random.randint(0,len(x))
+            swap_place_b = random.randint(0,len(x))
+            while swap_place_a == swap_place_b or swap_place_a+1 == swap_place_b or swap_place_a-1 == swap_place_b:
+                swap_place_b = random.randint(0,len(x))
             if swap_place_a > swap_place_b:
                 swap_place_a, swap_place_b = swap_place_b, swap_place_a
             return x[:swap_place_a] + x[swap_place_a:swap_place_b][::-1] + x[swap_place_b:]
         
-        # dump neighbour devinition
-        if swap_place_a >= len(x):
-            swap_place_a -=1
-        if swap_place_b >= len(x):
-            swap_place_b -=1
+        swap_place_a = random.randint(0,len(x)-1)
+        swap_place_b = swap_place_a
+        while swap_place_a == swap_place_b:
+            swap_place_b = random.randint(0,len(x)-1)
+
         x[swap_place_a],x[swap_place_b] = x[swap_place_b],x[swap_place_a]
         return x
 
@@ -150,21 +159,11 @@ class TSP(Problem):
                         maxValue = self.graph.edges[i,j]["weight"]
                 upperBound += maxValue
             self.upperBound = upperBound
-            print("upperbound is:",self.upperBound)
-            # upperBoundSolution = [0]
-            # not_visited = [f for f in range(1,len(self.graph.nodes))]
-            # while len(not_visited) > 0:
-            #     farthest_to_last = -1
-            #     dist_to_farthest = 0
-            #     for id in not_visited:
-            #         if self.graph.edges[upperBoundSolution[-1],id]["weight"] > dist_to_farthest:
-            #             farthest_to_last = id
-            #             dist_to_farthest = self.graph.edges[upperBoundSolution[-1],id]["weight"]
-            #     upperBoundSolution.append(not_visited.pop(not_visited.index(farthest_to_last)))
-            # self.upperBound = self.objective_function(upperBoundSolution)    
+            print("upperbound is:",self.upperBound)  
         return self.upperBound
     
-    def EstimateDeltaEnergy(self,n):
+    def EstimateDeltaEnergy(self):
+        n = self.dim
         deltas = []
         for _ in range(n):
             x = self.get_initial_solution()
@@ -174,4 +173,29 @@ class TSP(Problem):
 
     def getDimention(self):
         return self.dim
+    
+    def generate_tsp_graph(self):
+        """Generuje instancję problemu TSP jako pełny graf z wagami euklidesowymi."""
+        G = nx.Graph()
+        coord_range = self.dim * 10
+
+        # Generujemy losowe współrzędne dla każdego miasta
+        positions = {
+            i: (random.uniform(0, coord_range), random.uniform(0, coord_range))
+            for i in range(self.dim)
+        }
+
+        # Dodajemy wierzchołki do grafu z atrybutami pozycji
+        for node, pos in positions.items():
+            G.add_node(node, pos=pos)
+
+        # Dodajemy krawędzie z wagą jako odległość euklidesowa
+        for i in range(self.dim):
+            for j in range(i + 1, self.dim):
+                x1, y1 = positions[i]
+                x2, y2 = positions[j]
+                weight = math.hypot(x2 - x1, y2 - y1)
+                G.add_edge(i, j, weight=weight)
+        print("generated problem with dim:",self.dim)
+        return G
 

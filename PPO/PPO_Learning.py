@@ -50,13 +50,13 @@ class PPO:
         self.starting_lr = 0.00035 
         self.min_lr = 5e-6
         self.update_lr = True
-        # podstawowe okreslające uczenie
-        self.seed = 1
+        # podstawowe okreslające uczenie 
+        self.seed = 420
         self.num_envs = 3
         self.num_steps = 256 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 25000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
-        self.lr_cycle = int(self.total_timesteps / 2)
+        self.total_timesteps = 20000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.lr_cycle = int(self.total_timesteps)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
@@ -124,16 +124,19 @@ class PPO:
         # print("agent.get_action_and_value(self.next_obs)",self.agent.get_action_and_value(self.next_obs))
 
     def save_model(self,updates):
-        torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(updates + self.vers_offset))
-        if int(updates%int((self.total_timesteps // self.batch_size) / 25)) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1)):
-            os.remove(self.save_agent_path+"_updates"+str(updates + self.vers_offset - 1))
+        if(updates%10 == 0):
+            save_update = updates - updates%10
+            check_point =  int((self.total_timesteps // self.batch_size) / 25) - int((self.total_timesteps // self.batch_size) / 25)%10
+            torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(save_update + self.vers_offset))
+            if int(save_update%check_point) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(save_update + self.vers_offset - 10)):
+                os.remove(self.save_agent_path+"_updates"+str(save_update + self.vers_offset - 10))
 
 
 
     def run_learning(self):
         # TRY NOT TO MODIFY: start the game
         save_rewards_mean = False
-        global_step = 0
+        global_step = self.num_steps * self.vers_offset
         nxt_obs,_ = self.envs.reset()
         next_obs = torch.Tensor(nxt_obs).to(self.device)
         next_done = torch.zeros(self.num_envs).to(self.device)
@@ -143,6 +146,7 @@ class PPO:
         envs_reseted = 0
         envs_that_need_to_be_reset = self.num_envs
         # główna pętla ucząca
+
         for update in range(1,num_updates+1):
             print("Updates progress: ",update)
             # zmiana / dostosowanie lr
