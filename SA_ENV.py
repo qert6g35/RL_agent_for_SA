@@ -42,6 +42,14 @@ class SA_env(gym.Env):
         self.max_steps = 10000
         self.reward_lowerd_steps = 0.03 * self.max_steps
         self.total_reward = 0
+        self.total_improvment = 0
+        self.total_range_punhishment = 0
+        self.total_hot_walk = 0
+        self.total_cold_walk = 0
+        self.total_too_fast_changes = 0
+        self.total_good_trends = 0
+        self.total_delta_current = 0
+        self.total_no_improvment = 0
         self.done = False
         self.use_observation_divs =use_observation_divs
         self.use_time_temp_info = use_time_temp_info
@@ -57,8 +65,8 @@ class SA_env(gym.Env):
         
         self.run_history = []
         self.norm_reward_scale = 10.0
-        self.temp_history_size = 50
-        self.temp_short_size = 10
+        self.temp_history_size = 25
+        self.temp_short_size = 5
         self.last_temps = deque([0.5 for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
 
         l = [0, 0, 0, 0, 0]
@@ -85,7 +93,7 @@ class SA_env(gym.Env):
                 self.SA = SA.SA()
             self.max_steps = self.estimate_sa_steps()
             self.SA_steps = int(self.max_steps / self.steps_per_temp)
-            self.reward_lowerd_steps = 0.05 * self.SA_steps
+            self.reward_lowerd_steps = 0.03 * self.SA_steps
             # elements that should change when SA is 
             deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
             if deltaEnergy <= 0:
@@ -125,7 +133,7 @@ class SA_env(gym.Env):
         self.stesp_of_stagnation
         self.max_steps = self.estimate_sa_steps()
         self.SA_steps = int(self.max_steps / self.steps_per_temp)
-        self.reward_lowerd_steps = 0.05 * self.SA_steps
+        self.reward_lowerd_steps = 0.03 * self.SA_steps
         
         self.last_temps = deque([0.5 for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
         #print("we have starting temp:",self.starting_temp)
@@ -177,6 +185,14 @@ class SA_env(gym.Env):
         self.run_history = [obs + [0.5,0]]
         self.done = False
         self.total_reward = 0
+        self.total_improvment = 0
+        self.total_no_improvment = 0
+        self.total_range_punhishment = 0
+        self.total_hot_walk = 0
+        self.total_cold_walk = 0
+        self.total_too_fast_changes = 0
+        self.total_good_trends = 0
+        self.total_delta_current = 0
         return self.observation(), self.info() #!!! we pas none as info
     
     def makeTempChange(self,action_number):
@@ -222,10 +238,10 @@ class SA_env(gym.Env):
         
         if improvement > 0:
             reward = self.norm_reward_scale * improvement
-            reward = math.log1p(reward * self.SA.steps_done)
+            reward = min(math.log1p(reward * self.SA.steps_done)*2,10)
 
             if self.SA.steps_done > self.max_steps * 0.05:
-                reward = max(2,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
+                reward = max(1,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
 
         improvment_reward = reward
 
@@ -236,46 +252,39 @@ class SA_env(gym.Env):
         #! kary za przekroczenie granic temperaturowych
         range_punhishment = 0
         if was_temp_lower_than_min:
-            range_punhishment -= 1.0
-        elif teperature_factor >= 2:
-            punishment = 0.5 * (int(teperature_factor)-1)
+            range_punhishment -= 0.25
+        elif teperature_factor >= 1.5:
+            punishment = 0.25 * (int(teperature_factor)-1)
             if punishment > self.norm_reward_scale:
                 punishment = self.norm_reward_scale
             range_punhishment -= punishment # silna kara za każdą krotność przekroczenia temperatur
         else:
-            range_punhishment += 0.05 # śladowa nagroda za pozostawanie w dobrym zakreśie
+            range_punhishment += 0.0005 # śladowa nagroda za pozostawanie w dobrym zakreśie
 
         reward += range_punhishment
 
         cold_steps_punishment, hot_steps_punishment = self.stepsInWrongRangePunishment(new_observation)
-        
-        reward += cold_steps_punishment + hot_steps_punishment
+       # print(cold_steps_punishment,hot_steps_punishment)
+        reward += cold_steps_punishment 
+        reward += hot_steps_punishment
 
         # ! pozostałość po każe za kroki bez poprawy 
-        #steps_without_solution_correction = self.run_history[-1][3] * self.max_steps
-        # if (teperature_factor <= 2):
-        #     if (teperature_factor < 0.09):
-        #         reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(0.09)-1) # jak trzymamy temp poniżej 0.09% / 200% możliwej to karamy max 10 razy mocniej by nie wyjebać kary zbyt dużej
-        #     elif teperature_factor < 1:
-        #         reward -= (steps_without_solution_correction/self.max_steps*(8))*(1/(teperature_factor)-1) # odpowieni współczyniik kary jak mamy temperaturą niższą niż startowa a utkneliśmy w minimum
-        #     elif steps_without_solution_correction > self.max_steps*0.02:
-        #         reward += max(15 - 30*(steps_without_solution_correction-self.max_steps*0.02)/self.max_steps,-1)  # NAGRADZAMY GO JAK PRUBUJE SZYKAĆ NOWYCH ROZWIĄZAŃ GDY DAWNO CZEGOS NIE ZNALEŹLIŚMY !!!!!!!
-        # else:
-        #     reward -= (steps_without_solution_correction/self.max_steps*10) # tej sytuacji nie chcemy dodatkowo obciążać bo i tak mamy karę za zbyt dużą temperaturę 
-        #? tutaj właściwa postać tej kary
-        reward = reward - new_observation[3] * 3 # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
+        reward = reward - new_observation[3] * 0.1 # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
+        self.total_no_improvment -= new_observation[3] * 0.1 
+
+    
         #!! kara za zbyt gwałtowne zmiany
         too_fast_changes = 0
         if self.use_time_temp_info:
-            if new_observation[-4]>0.03: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                too_fast_changes -= 1
+            if new_observation[-4]>0.02: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                too_fast_changes -= 0.1
         reward += too_fast_changes
 
         #? nagroda za zgodne trendy
         good_trends = 0
         if self.use_time_temp_info:
             if (new_observation[-1]>0 and new_observation[-2]>0) or (new_observation[-1]<0 and new_observation[-2]<0): #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                good_trends += 0.25
+                good_trends += 0.1
         reward += good_trends
         delta_current_reward = 0
         #! drobna nagroda za poprawę currentalue v 
@@ -285,7 +294,7 @@ class SA_env(gym.Env):
         if delta_current > 0:
             #print("adding mini_reward for good exploration direction:",min(2.0* delta_current ** 0.3,0.5))
             #print("how far is new_current to new_best",(new_observation[0] - new_observation[1]))
-            delta_current_reward = min(delta_current ** 0.5,0.15) * (1 - max(min((new_observation[0] - new_observation[1])*5.0,0.9),0.1))
+            delta_current_reward = 0.02 * (1 - max(min((new_observation[0] - new_observation[1])*5.0,0.9),0.1))
         reward += delta_current_reward
 
         #! nagroda za trzymanie się trendu i odbijanie się od granic 
@@ -305,28 +314,35 @@ class SA_env(gym.Env):
         #[self.current_temp,reward])#
         self.run_history.append( new_observation +[self.current_temp,reward])# [-new_observation[3] * 3/self.norm_reward_scale,hot_steps_punishment/self.norm_reward_scale,too_fast_changes/self.norm_reward_scale,cold_steps_punishment/self.norm_reward_scale,good_trends/self.norm_reward_scale,min(teperature_factor,2.0)/2.0,reward])
         self.total_reward += reward
+        self.total_improvment += improvment_reward
+        self.total_range_punhishment += range_punhishment
+        self.total_hot_walk += hot_steps_punishment
+        self.total_cold_walk += cold_steps_punishment
+        self.total_too_fast_changes += too_fast_changes
+        self.total_good_trends += good_trends
+        self.total_delta_current += delta_current_reward
         return new_observation, reward , is_terminated, False, self.info()
 
     def stepsInWrongRangePunishment(self,new_observation):
         cold_walk_punishment = 0
         hot_walk_punishment = 0
         if new_observation[-5] < 0.02:
-            cold_walk_punishment -= 0.05
+            cold_walk_punishment -= 0.025
             self.stesp_in_cold += 1
-            self.stesp_in_hot = 0
-        else:
-            self.stesp_in_cold = max(0,self.stesp_in_cold // 2 - 1)
+            self.stesp_in_hot = max(0,self.stesp_in_hot // 2 - 1)
+        elif self.stesp_in_cold > 0:
+            self.stesp_in_cold -= 2 
 
         if new_observation[-5] > 0.4:
-            hot_walk_punishment -= 0.05
+            hot_walk_punishment -= 0.025
             self.stesp_in_hot += 1
-            self.stesp_in_cold = 0
-        else:
-            self.stesp_in_hot = max(0,self.stesp_in_hot // 2 - 1)
+            self.stesp_in_cold = max(0,self.stesp_in_cold // 2 - 1)
+        elif self.stesp_in_hot > 0:
+            self.stesp_in_hot -= 2
 
-        cold_walk_punishment -= self.stesp_in_cold/self.SA_steps * 1.5
-        hot_walk_punishment -= self.stesp_in_hot/self.SA_steps * 2
-
+        cold_walk_punishment -= self.stesp_in_cold/self.SA_steps * 0.125
+        hot_walk_punishment -= self.stesp_in_hot/self.SA_steps * 0.175
+       # print(self.stesp_in_cold,cold_walk_punishment,self.stesp_in_hot,hot_walk_punishment)
         return cold_walk_punishment,hot_walk_punishment
         
 
@@ -374,7 +390,17 @@ class SA_env(gym.Env):
 
     def info(self): # nie sądze by to było potzebne więc zostawiam pusty set 
         if self.done:
-            return {"tr":self.total_reward}#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
+            return {
+                "total":self.total_reward,
+                "improvment":self.total_improvment,
+                "no_improvment":self.total_no_improvment,
+                "range":self.total_range_punhishment,
+                "hot":self.total_hot_walk,
+                "cold":self.total_cold_walk ,
+                "noice":self.total_too_fast_changes,
+                "trends":self.total_good_trends,
+                "deltaC":self.total_delta_current,
+                }#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
         return {}
 
     def observation(self):

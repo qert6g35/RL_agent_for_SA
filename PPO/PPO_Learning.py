@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 import os
 import time
-from collections import deque
+from collections import deque,defaultdict
 from statistics import mean, stdev
 import math
 
@@ -47,15 +47,15 @@ class PPO:
         self.gamma = 0.97
         self.gae_lambda = 0.9
         # parametry związane z lr i jego updatem
-        self.starting_lr = 0.00035 
+        self.starting_lr = 0.0005
         self.min_lr = 5e-6
         self.update_lr = True
         # podstawowe okreslające uczenie 
-        self.seed = 420
+        self.seed = 2
         self.num_envs = 3
-        self.num_steps = 256 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
+        self.num_steps = 512 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 20000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.total_timesteps = 1200000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
         self.lr_cycle = int(self.total_timesteps)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
@@ -115,8 +115,8 @@ class PPO:
         self.dones = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
         self.values = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
 
-
-        self.episode_rewards = deque([0.0 for _ in range (self.num_envs)], self.num_envs)
+        self.reward_history = defaultdict(lambda: deque(maxlen=3))
+        #self.episode_rewards = deque([0.0 for _ in range (self.num_envs)], self.num_envs)
         # print("next obs shape",self.next_obs.shape)
         # print("agent.getValue(next obs)",self.agent.get_value(self.next_obs))
         # print("agent.getValue(next obs) shape",self.agent.get_value(self.next_obs).shape)
@@ -144,7 +144,7 @@ class PPO:
         print("there should be ",num_updates,"updates in PPO learning")
         start_time = time.time()
         envs_reseted = 0
-        envs_that_need_to_be_reset = self.num_envs
+        #envs_that_need_to_be_reset = self.num_envs
         # główna pętla ucząca
 
         for update in range(1,num_updates+1):
@@ -173,24 +173,25 @@ class PPO:
                 next_obs, reward, done,_, info = self.envs.step(action.cpu().numpy())
                 self.rewards[step] = torch.tensor(reward).to(self.device).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs).to(self.device), torch.Tensor(done).to(self.device)
-                
-                if "tr" in info:
-                    #print(info["tr"])
-                    for value in info["tr"]:
-                        if value != 0:
-                            self.episode_rewards.append(value)
-                            envs_that_need_to_be_reset -= 1
-                            if envs_that_need_to_be_reset == 0:
-                                save_rewards_mean = True
 
+                if "total" in info:
+                    #print(info)
+                    for env_id in range(len(info["total"])):
+                        for key, values in info.items():
+                            if key[0] != '_':
+                                value = values[env_id]
+                                if value != 0:
+                                    self.reward_history[key].append(value)
+                                    save_rewards_mean = True
                         
 
                 if save_rewards_mean:
                     envs_reseted += self.num_envs
-                    envs_that_need_to_be_reset += self.num_envs
                     save_rewards_mean = False
-                    self.writer.add_scalar("charts/avr_reward_from_last_"+str(self.num_envs), mean(self.episode_rewards), envs_reseted)
-                    print("for envs reset",envs_reseted,"we go mean total reward:",mean(self.episode_rewards))
+                    for key, values in self.reward_history.items():
+                        if len(values) > 0:
+                            avg = sum(values) / len(values)
+                            self.writer.add_scalar(f"charts/reward_{key}", avg, envs_reseted)
 
 
             # # bootstrap value if not done
