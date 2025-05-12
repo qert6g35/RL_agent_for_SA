@@ -195,7 +195,7 @@ class SA_env(gym.Env):
         self.total_delta_current = 0
         return self.observation(), self.info() #!!! we pas none as info
     
-    def makeTempChange(self,action_number):
+    def makeTempChangeStep(self,action_number):
         was_temp_lower_than_min = False
         if (self.temp_change_strategy == TemperatureChangeStrategy.AddStarting):
             self.current_temp += self.starting_temp * (self.actions[action_number] - 1 )#= 0.9 * self.current_temp * self.actions[action_number] + self.current_temp * 0.1
@@ -209,19 +209,10 @@ class SA_env(gym.Env):
 
         if self.current_temp > self.starting_temp*10:
             self.current_temp = self.starting_temp*10
-        
-        return was_temp_lower_than_min
-
-    def step(self,action_number):
-        was_temp_lower_than_min = self.makeTempChange(action_number)
-
-        if self.current_temp > self.starting_temp*10:
-            self.current_temp = self.starting_temp*10
 
         teperature_factor = (self.current_temp - self.min_temp) /(self.starting_temp - self.min_temp)
         self.last_temps.append(min(teperature_factor,2.0)/2.0)
-
-        #for _ in range(self.steps_per_temp_change): # = 10
+        
         self.SA.step(self.current_temp,steps_per_temperature=self.steps_per_temp)
 
         if self.last_best_value != self.SA.best_solution_value:
@@ -229,6 +220,11 @@ class SA_env(gym.Env):
             self.last_best_value = self.SA.best_solution_value
         else:
             self.steps_without_correction += 1
+
+        return was_temp_lower_than_min,teperature_factor
+
+    def step(self,action_number):
+        was_temp_lower_than_min,teperature_factor = self.makeTempChangeStep(action_number)
 
         new_observation = self.observation()
             #self.run_history.append( new_observation + self.run_history[-1][-6:])
@@ -487,11 +483,11 @@ class SA_env(gym.Env):
                 elif type(model) in DQN_Models.DQN_MODELS:
                     actionNR = model(torch.tensor(obs, dtype=torch.float32).unsqueeze(0))
                     actionNR = actionNR.max(1).indices.view(1, 1).item()
-                self.makeTempChange(action_number=actionNR)
-            
-            #perform SA step
-            self.SA.step(self.current_temp,steps_per_temperature=self.steps_per_temp)
 
+                #based on choosed action
+                #perform SA step
+                self.makeTempChangeStep(action_number=actionNR)
+                
             #collecting data
             self.run_history.append( obs + [self.current_temp,0])
             obs = self.observation()

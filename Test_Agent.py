@@ -190,24 +190,22 @@ def make_ploting_test():
     # PPO_nn_6563.load_state_dict(torch.load('PPO_2025_04_22_21_52_updates6563'))
 
     NN_TS = [
-        ("PPO_F1_25k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_25k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_50k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_75k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_100k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        #("PPO_F2_32k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env())
-        # ("PPO_update_31k",PPO_nn_31206,SA_ENV.SA_env()),
-        # ("DDQN_eps_1k",DQN_nn_999,SA_ENV.SA_env()),
-        # ("PPO_update_115k",PPO_nn_115352,SA_ENV.SA_env()),
-        # ("DDQN_eps_3k",DQN_nn_2999,SA_ENV.SA_env()),
-        # ("PPO_new_6.5k",PPO_nn_6563,SA_ENV.SA_env()),
+        #("PPO_F1_25k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("PPO_F2_25k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("PPO_F2_50k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("PPO_F2_75k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("PPO_F2_100k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_F2_83k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_F2_166k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_F2_249k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_F2_255k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
     ]
 
-    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/F/1/PPO_2025_05_04_19_31_updates26040'))
-    NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates29110'))
-    NN_TS[2][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates54070'))
-    NN_TS[3][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates79030'))
-    NN_TS[4][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160'))
+    NN_TS[0][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates83320'))
+    NN_TS[1][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates166650'))
+    NN_TS[2][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates249980'))
+    NN_TS[3][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates255480'))
+    #NN_TS[4][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160'))
 
 
     new_problem = Problem.TSP()

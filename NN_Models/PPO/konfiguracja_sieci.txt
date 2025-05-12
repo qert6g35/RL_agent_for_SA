@@ -158,13 +158,20 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
 
         Test czy zwiększenie steps per temperature do 10 zwiększy skutecznosc sieci
 
+                                                                UWAGA TEGO NIE TESTOWANO NA POPRAWNYCH DANYCH
 
 
         F F F F F
 
-        TODO
+        zmieniono nagrody na bardziej adekwatne do nowego sterowania pierwsze ustawienie parametrów nowej nagrody
 
+        self.temp_history_size = 50
+        self.temp_short_size = 10
+                                                                UWAGA TEGO NIE TESTOWANO NA POPRAWNYCH DANYCH (w run test nie dodwano temp_)
 
         G G G G 
 
-        zbalansowano nagrody 
+        zbalansowano nagrody tak aby poprawka faktycznie była znacznie większa niżwszystkie pozostałe
+
+        self.temp_history_size = 25
+        self.temp_short_size = 5
