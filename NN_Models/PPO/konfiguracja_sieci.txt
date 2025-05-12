@@ -175,3 +175,46 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
 
         self.temp_history_size = 25
         self.temp_short_size = 5
+
+
+
+        G2 G2 G2 
+
+        dodatkowy balans nagród na podstawie tensorborda
+
+        trendy: good_trends += 0.02 zamiast 0.1
+
+        noImpr  - new_observation[3] * 0.025 (0.1)
+
+        deltaC 0.0075 (0.02)
+
+
+        zwiększono częstotliwość występowania kary za zbyt gwałtowne zmiany i o ciupinkę zmniejszono samą karę 
+
+                too_fast_changes = 0
+        if self.use_time_temp_info:
+            if new_observation[-4]>0.01 or new_observation[-3]>0.0175: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                too_fast_changes -= 0.075
+        reward += too_fast_changes
+
+
+
+
+        #! nowe w G2
+        #? drobna nagroda za utrzymywanie małych (bliskich 0) wartości trendu w okolicach wychładzania
+        cold_seraching = 0
+        if self.use_time_temp_info:
+            if new_observation[-5]< 0.015 and abs(new_observation[-1]) < 0.005: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                cold_seraching += 0.005
+        reward += cold_seraching
+        self.total_cold_slow_changes += cold_seraching
+
+
+        dodatkowo podniesiono mnożniki za kary w korkach w cieple /zimnie do 0.2 (0.175) i dodano 
+
+        #! nowy element w G2. zerujemy karę za przebywanie w zimnie jak udało nam się faktycznie coś odnaleść
+        if self.steps_without_correction <= 1:
+            self.stesp_in_cold = 0
+        
+        if(self.stesp_in_cold > 5):#! nowy element w G2, opuźniamy karę za chłodzenie
+            cold_walk_punishment -= (self.stesp_in_cold - 5)/self.SA_steps * 0.2

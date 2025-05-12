@@ -50,6 +50,7 @@ class SA_env(gym.Env):
         self.total_good_trends = 0
         self.total_delta_current = 0
         self.total_no_improvment = 0
+        self.total_cold_slow_changes = 0
         self.done = False
         self.use_observation_divs =use_observation_divs
         self.use_time_temp_info = use_time_temp_info
@@ -146,7 +147,7 @@ class SA_env(gym.Env):
         self.steps_without_correction = 0
         self.last_best_value = self.SA.best_solution_value
 
-        # #! zaawansowane plotowanie na potrzeby oprzedstawienia temperatury i przebiegu poprzedniej instacjni 
+        # # #! zaawansowane plotowanie na potrzeby oprzedstawienia temperatury i przebiegu poprzedniej instacjni 
         # if(len(self.run_history)>10):
         #     fig, axs = plt.subplots(3, 3, figsize=(8, 15))
         #     axs[0][0].plot([x[0] for x in self.run_history], color='blue',label = "current")
@@ -157,22 +158,22 @@ class SA_env(gym.Env):
         #     axs[2][0].plot([x[0] - x[1] for x in self.run_history], color='red')
 
         #     axs[0][1].plot([x[-1] for x in self.run_history], color='red',label = "reward")
-        #     axs[0][1].set_ylim(-1, 1)
+        #     #axs[0][1].set_ylim(-1, 1)
             
         #     axs[1][1].plot([x[-3] for x in self.run_history], color='green',label = "good_trends ")
-        #     axs[1][1].set_ylim(-1, 1)
+        #     #axs[1][1].set_ylim(-1, 1)
 
         #     axs[2][1].plot([x[-4] for x in self.run_history], color='blue',label = "cold punishment")
-        #     axs[2][1].set_ylim(-1, 1)
+        #     #axs[2][1].set_ylim(-1, 1)
 
         #     axs[0][2].plot([x[5] for x in self.run_history], color='red',label = "mean")
-        #     axs[0][2].set_ylim(-1, 1)
+        #     #axs[0][2].set_ylim(-1, 1)
 
         #     axs[1][2].plot([x[-5] for x in self.run_history], color='red',label = "too fast changes")
-        #     axs[1][2].set_ylim(-1, 1)
+        #     #axs[1][2].set_ylim(-1, 1)
 
         #     axs[2][2].plot([x[-6] for x in self.run_history], color='red',label = "hot punishment")
-        #     axs[2][2].set_ylim(-1, 1)
+        #     #axs[2][2].set_ylim(-1, 1)
 
             
         #     fig.legend()
@@ -193,6 +194,7 @@ class SA_env(gym.Env):
         self.total_too_fast_changes = 0
         self.total_good_trends = 0
         self.total_delta_current = 0
+        self.total_cold_slow_changes = 0
         return self.observation(), self.info() #!!! we pas none as info
     
     def makeTempChangeStep(self,action_number):
@@ -248,14 +250,14 @@ class SA_env(gym.Env):
         #! kary za przekroczenie granic temperaturowych
         range_punhishment = 0
         if was_temp_lower_than_min:
-            range_punhishment -= 0.25
+            range_punhishment -= 0.2
         elif teperature_factor >= 1.5:
-            punishment = 0.25 * (int(teperature_factor)-1)
+            punishment = 0.2 * (int(teperature_factor)-1)
             if punishment > self.norm_reward_scale:
                 punishment = self.norm_reward_scale
             range_punhishment -= punishment # silna kara za każdą krotność przekroczenia temperatur
         else:
-            range_punhishment += 0.0005 # śladowa nagroda za pozostawanie w dobrym zakreśie
+            range_punhishment += 0.00025 # śladowa nagroda za pozostawanie w dobrym zakreśie
 
         reward += range_punhishment
 
@@ -265,36 +267,43 @@ class SA_env(gym.Env):
         reward += hot_steps_punishment
 
         # ! pozostałość po każe za kroki bez poprawy 
-        reward = reward - new_observation[3] * 0.1 # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
-        self.total_no_improvment -= new_observation[3] * 0.1 
+        reward = reward - new_observation[3] * 0.035 # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
+        self.total_no_improvment -= new_observation[3] * 0.035 
 
     
         #!! kara za zbyt gwałtowne zmiany
         too_fast_changes = 0
         if self.use_time_temp_info:
-            if new_observation[-4]>0.02: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                too_fast_changes -= 0.1
+            if new_observation[-4]>0.01 or new_observation[-3]>0.0175: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                too_fast_changes -= 0.075
         reward += too_fast_changes
 
         #? nagroda za zgodne trendy
         good_trends = 0
         if self.use_time_temp_info:
             if (new_observation[-1]>0 and new_observation[-2]>0) or (new_observation[-1]<0 and new_observation[-2]<0): #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                good_trends += 0.1
+                good_trends += 0.02 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
         reward += good_trends
         delta_current_reward = 0
+        
+        #! nowe w G2
+        #? drobna nagroda za utrzymywanie małych (bliskich 0) wartości trendu w okolicach wychładzania
+        cold_seraching = 0
+        if self.use_time_temp_info:
+            if new_observation[-5]< 0.035 and abs(new_observation[-1]) < 0.005: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                cold_seraching += 0.005
+        reward += cold_seraching
+        self.total_cold_slow_changes += cold_seraching
+
         #! drobna nagroda za poprawę currentalue v 
-        #! Uwaga nagroda ta jest zwiększona aż do 0.5 ale za to skaluje się z odległością między current a best czyli tym bardziej go nagdzadzamy im bardziej current zbliża się do obecnego best value )
-        #! Zostałą zmniejszona za to że agent ją zbyt często grindował
+        #! Została zmniejszona za to że agent ją zbyt często grindował
         delta_current = self.run_history[-1][0] - new_observation[0]
         if delta_current > 0:
             #print("adding mini_reward for good exploration direction:",min(2.0* delta_current ** 0.3,0.5))
             #print("how far is new_current to new_best",(new_observation[0] - new_observation[1]))
-            delta_current_reward = 0.02 * (1 - max(min((new_observation[0] - new_observation[1])*5.0,0.9),0.1))
+            delta_current_reward = 0.0075 * (1 - max(min((new_observation[0] - new_observation[1])*5.0,0.9),0.1))
         reward += delta_current_reward
 
-        #! nagroda za trzymanie się trendu i odbijanie się od granic 
-        #if 
 
         #! TO MOŻE NAM POMÓC Z OGARNIĘĆIEM WYBUCHAJĄCYCH WARTOŚCI PRZY STEROWANIU
         # normalizacja nagrody
@@ -322,22 +331,27 @@ class SA_env(gym.Env):
     def stepsInWrongRangePunishment(self,new_observation):
         cold_walk_punishment = 0
         hot_walk_punishment = 0
-        if new_observation[-5] < 0.02:
+        if new_observation[-5] < 0.035:
             cold_walk_punishment -= 0.025
             self.stesp_in_cold += 1
             self.stesp_in_hot = max(0,self.stesp_in_hot // 2 - 1)
         elif self.stesp_in_cold > 0:
             self.stesp_in_cold -= 2 
 
-        if new_observation[-5] > 0.4:
+        if new_observation[-5] > 0.45:
             hot_walk_punishment -= 0.025
             self.stesp_in_hot += 1
             self.stesp_in_cold = max(0,self.stesp_in_cold // 2 - 1)
         elif self.stesp_in_hot > 0:
             self.stesp_in_hot -= 2
 
-        cold_walk_punishment -= self.stesp_in_cold/self.SA_steps * 0.125
-        hot_walk_punishment -= self.stesp_in_hot/self.SA_steps * 0.175
+        #! nowy element w G2. zerujemy karę za przebywanie w zimnie jak udało nam się faktycznie coś odnaleść
+        if self.steps_without_correction <= 1:
+            self.stesp_in_cold = 0
+        
+        if(self.stesp_in_cold > 5):#! nowy element w G2, opuźniamy karę za chłodzenie
+            cold_walk_punishment -= (self.stesp_in_cold - 5)/self.SA_steps * 0.2
+        hot_walk_punishment -= self.stesp_in_hot/self.SA_steps * 0.2
        # print(self.stesp_in_cold,cold_walk_punishment,self.stesp_in_hot,hot_walk_punishment)
         return cold_walk_punishment,hot_walk_punishment
         
@@ -396,6 +410,7 @@ class SA_env(gym.Env):
                 "noice":self.total_too_fast_changes,
                 "trends":self.total_good_trends,
                 "deltaC":self.total_delta_current,
+                "slow_clod_changes":self.total_cold_slow_changes
                 }#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
         return {}
 
