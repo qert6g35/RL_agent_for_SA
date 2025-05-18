@@ -356,17 +356,17 @@ def make_compareing_test(NUM_TESTS):
             save_flat_sa_results_to_csv()
 
 
-# h = "y"            
-# while(h == "y"):
-#     make_ploting_test()
-#     h = input("continue?:")
+h = "y"            
+while(h == "y"):
+    make_ploting_test()
+    h = input("continue?:")
 
 
 
 #make_compareing_test(10000)
 
 
-compareTempSheduler()
+#compareTempSheduler()
 
 
 

@@ -178,7 +178,14 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
 
 
 
-        G2 G2 G2 
+
+
+
+
+
+        G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2   G2 G2 G2 
+
+
 
         dodatkowy balans nagród na podstawie tensorborda
 
@@ -218,3 +225,85 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
         
         if(self.stesp_in_cold > 5):#! nowy element w G2, opuźniamy karę za chłodzenie
             cold_walk_punishment -= (self.stesp_in_cold - 5)/self.SA_steps * 0.2
+
+
+
+
+
+        
+
+
+        G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3    G3
+
+
+Zmiany w nagrodzie:
+
+    HOT_COL_WALK
+
+        naliczane gdy wystąpi +1:
+            cold_walk_punishment -= 0.025 >> 0.015 
+            hot_walk_punishment -= 0.025 >> 0.01
+
+        zwiększono zakresy od których naliczają się kary:
+            new_observation[-5] < 0.04 COLD
+            new_observation[-5] > 0.4 HOT
+
+        zmniejszamy wsp. naliczania dla HOT
+            0.2 >> 0.15
+
+
+    IMPROVMENT 
+
+        minimana nagroda za jakąś poprawę: 1 >> 2
+              ale naliczamy ją dopiero po 5% >> 20%  czasu trwania SA
+
+
+    KROKI BEZ POPRAWY
+
+        0.035 >> 0.02
+
+    TRENDY
+
+        nagroda zmniejszona 
+        0.02 >> 0.012
+
+    COLD SLOW CHANGES nagroda za powolne poszukiwanie w zimnym środowisku
+
+        0.005 >> 0.012
+
+    NOICE (kara za szum)
+
+        Rozbicie bardzo drobne wzmocnienie 0.075 >> 0.08
+
+        częstrze wykrywanie dla 
+
+
+    delsta cuerrent (zmniejszamy bazowy wsp.)
+
+        0.0075 >> 0.0035
+
+
+
+
+
+    UWAGA !!!!! DUŻA ZMIANA 
+
+        self.temp_history_size = 25 >> 40
+        self.temp_short_size = 5 >> 8
+
+
+
+
+
+
+Zmiany w uczeniu PPO:
+
+        total_timesteps 100kk >>> 200kk (ogólne zwiększonie iloścki wykonanych probek)
+        num_steps 256 >>> 512 (ilosc stepow wykonanych w każdym srodowisku)
+        num_envs 3 >>> 10 (ilosc srodowisk odpalonych na raz)
+        self.ent_coef 0.05 >>> 0.1 wzmacniamy eksplorację agenta
+        update_epochs 3 >>> 1 mniej powtórzeń uczenia dla jednego zestawu danych
+        num_of_minibatches 5 >>> 10
+
+        self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
+        self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz

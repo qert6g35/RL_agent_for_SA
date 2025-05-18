@@ -1,4 +1,4 @@
-dim,ts_name,bv,stbv
+dim,ts_name,best_value,steps_to_best_value
 188,PPO_G2_130k,158810.53550787075,18135
 188,Linear,158746.58574617197,22945
 188,ReciprocalV1,156991.39942730535,3902

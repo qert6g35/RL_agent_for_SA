@@ -1,6 +1,7 @@
 # źródło https://www.youtube.com/watch?v=MEt6rrxH8W4&t=220s
 # https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/
 import random
+from cycler import V
 import numpy as np
 import torch
 import torch.nn as nn 
@@ -51,17 +52,17 @@ class PPO:
         self.min_lr = 5e-6
         self.update_lr = True
         # podstawowe okreslające uczenie 
-        self.seed = 41
-        self.num_envs = 3
-        self.num_steps = 256 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
-        self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 100000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.seed = 25
+        self.num_envs = 10
+        self.num_steps = 512 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
+        self.num_of_minibatches = 10 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
+        self.total_timesteps = 200000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
         self.lr_cycle = int(self.total_timesteps)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
         print("total_timesteps:",self.total_timesteps)
-        self.update_epochs = 3 # uwaga tutaj ustalamy, ile razy chcemy przejść przez cały proces uczenia na tych samych danych
+        self.update_epochs = 1 # uwaga tutaj ustalamy, ile razy chcemy przejść przez cały proces uczenia na tych samych danych
 
         self.use_adv_normalization = True # flaga która decyduje czy adventage powinno być normalizowane
 
@@ -71,7 +72,7 @@ class PPO:
         self.max_grad_norm = 0.5 # maksymalna zmiana wag w sieci 
 
         #Entropy loss params
-        self.ent_coef = 0.05 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
+        self.ent_coef = 0.1 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
         self.vf_coef = 0.25 # w jakim stopniu minimalizujemy value loss w porównaniu do minimalizowania błędu na wyjściu sieci
 
         # parametr ograniczający zbyt duże zmiany w kolejnych iteracjach
@@ -115,23 +116,67 @@ class PPO:
         self.dones = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
         self.values = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
 
-        self.reward_history = defaultdict(lambda: deque(maxlen=3))
-        #self.episode_rewards = deque([0.0 for _ in range (self.num_envs)], self.num_envs)
-        # print("next obs shape",self.next_obs.shape)
-        # print("agent.getValue(next obs)",self.agent.get_value(self.next_obs))
-        # print("agent.getValue(next obs) shape",self.agent.get_value(self.next_obs).shape)
-        # print()
-        # print("agent.get_action_and_value(self.next_obs)",self.agent.get_action_and_value(self.next_obs))
+        self.best_versions = []
+
+        self.reward_history = defaultdict(lambda: deque(maxlen=5))
+
+    def save_if_better(self, agent_value,update):
+        """
+        Zapisuje 3 najlepsze wersje agenta na podstawie średniej jakości.
+        :param agent_value: Średnia jakość agenta z ostatnich środowisk
+        """
+        # Sprawdź czy obecna wersja jest lepsza niż któraś z zapisanych
+        should_save = False
+        
+        if len(self.best_versions) < 3:
+            should_save = True
+        else:
+            # Znajdź najgorszą z obecnie zapisanych wersji
+            worst_value = min(v for v, _ in self.best_versions)
+            if agent_value > worst_value:
+                should_save = True
+                # Znajdź i usuń plik z najgorszą wersją
+                for ver, path in self.best_versions:
+                    if ver == worst_value:
+                        try:
+                            os.remove(path)
+                        except OSError:
+                            pass
+                # Usuń najgorszą wersję
+                self.best_versions = [(v, p) for v, p in self.best_versions if v != worst_value]
+        if should_save:
+            save_path = f"{self.save_agent_path}_value{agent_value}_envs_updated{update}"
+            
+            # Zapisz model
+            torch.save(self.agent.state_dict(), save_path)
+            
+            # Dodaj do listy najlepszych wersji
+            self.best_versions.append((agent_value, save_path))
+            
+            # Posortuj listę malejąco
+            self.best_versions.sort(reverse=True, key=lambda x: x[0])
+            
+            # Ogranicz do 3 najlepszych
+            if len(self.best_versions) > 3:
+                # Usuń nadmiarowe (najgorsze) wersje
+                for _, path in self.best_versions[3:]:
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        pass
+                self.best_versions = self.best_versions[:3]
 
     def save_model(self,updates):
         if(updates%10 == 0):
             save_update = updates - updates%10
-            check_point =  int((self.total_timesteps // self.batch_size) / 10) - int((self.total_timesteps // self.batch_size) / 10)%10
+            check_point =  int((self.total_timesteps // self.batch_size) / 20) - int((self.total_timesteps // self.batch_size) / 20)%10
             torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(save_update + self.vers_offset))
-            if int(save_update%check_point) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(save_update + self.vers_offset - 10)):
-                os.remove(self.save_agent_path+"_updates"+str(save_update + self.vers_offset - 10))
+            if int(save_update%check_point) != 0:
+                self.delete_model(save_update + self.vers_offset - 10)
 
-
+    def delete_model(self,save_to_delete):
+        if os.path.exists(self.save_agent_path+"_updates"+str(save_to_delete)):
+            os.remove(self.save_agent_path+"_updates"+str(save_to_delete))
 
     def run_learning(self):
         # TRY NOT TO MODIFY: start the game
@@ -186,12 +231,14 @@ class PPO:
                         
 
                 if save_rewards_mean:
-                    envs_reseted += self.num_envs
+                    envs_reseted += 1
                     save_rewards_mean = False
                     for key, values in self.reward_history.items():
                         if len(values) > 0:
                             avg = sum(values) / len(values)
                             self.writer.add_scalar(f"charts/reward_{key}", avg, envs_reseted)
+                            if key == "total" and envs_reseted%5 == 0:
+                                self.save_if_better(avg,envs_reseted)
 
 
             # # bootstrap value if not done
