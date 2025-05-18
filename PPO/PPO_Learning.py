@@ -55,7 +55,7 @@ class PPO:
         self.num_envs = 3
         self.num_steps = 256 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 5 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 150000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.total_timesteps = 100000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
         self.lr_cycle = int(self.total_timesteps)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
@@ -126,7 +126,7 @@ class PPO:
     def save_model(self,updates):
         if(updates%10 == 0):
             save_update = updates - updates%10
-            check_point =  int((self.total_timesteps // self.batch_size) / 10) - int((self.total_timesteps // self.batch_size) / 25)%10
+            check_point =  int((self.total_timesteps // self.batch_size) / 10) - int((self.total_timesteps // self.batch_size) / 10)%10
             torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(save_update + self.vers_offset))
             if int(save_update%check_point) != 0 and os.path.exists(self.save_agent_path+"_updates"+str(save_update + self.vers_offset - 10)):
                 os.remove(self.save_agent_path+"_updates"+str(save_update + self.vers_offset - 10))

@@ -66,8 +66,6 @@ def plot_SA_output(lbest_values_list,lcurrent_values_list,ltemp_values_list,dbes
     plt.tight_layout()  # Adjust layout to prevent overlap
     plt.show()
 
-
-
 def TestGivenTempSheduler(TSM):
     problem = Problem.TSP()
 
@@ -195,16 +193,16 @@ def make_ploting_test():
         #("PPO_F2_50k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         #("PPO_F2_75k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         #("PPO_F2_100k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_83k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_166k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_249k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_F2_255k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("PPO_F2_83k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("PPO_F2_166k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_G2_65k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("PPO_G2_130k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
     ]
 
-    NN_TS[0][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates83320'))
-    NN_TS[1][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates166650'))
-    NN_TS[2][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates249980'))
-    NN_TS[3][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates255480'))
+    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates65050'))
+    NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200'))
+    # NN_TS[2][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates249980'))
+    # NN_TS[3][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates255480'))
     #NN_TS[4][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160'))
 
 
@@ -244,16 +242,11 @@ def make_ploting_test():
         plt.tight_layout()
         plt.show()
 
-    input("")
-
 
     # for tuple in TS:
     #     run_results[tuple[0]] = tuple[2].run(
     #         max_steps=DQN_SA_engine.max_steps, 
     #         temp_shadeuling_model=tuple[1])
-
-
-
 
 def make_compareing_test(NUM_TESTS):
     test_result = {}
@@ -301,14 +294,14 @@ def make_compareing_test(NUM_TESTS):
 
         test_result[problem_dimention] += (refactored_result)
 
-    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True,use_observation_divs=True,use_time_temp_info=False)
+    DQN_SA_engine = SA_ENV.SA_env(set_up_learning_on_init=True)
     # DQN_model = DuelingDQN_NN()
 
     NN_TS = [
-        ("POO_32k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False))
+        ("PPO_G2_130k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env())
     ]
 
-    NN_TS[0][1].load_state_dict(torch.load('PPO_2025_04_28_21_20_updates32552'))
+    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200'))
 
     TS: List[TempSheduler.TempSheduler] = [
         #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
@@ -361,8 +354,10 @@ def make_compareing_test(NUM_TESTS):
         collect_run_result(run_results,new_problem.getDimention())
         if i % 1 == 0:
             save_flat_sa_results_to_csv()
-
-make_ploting_test()
+h = "y"            
+while(h == "y"):
+    make_ploting_test()
+    h = input("continue?:")
 #make_compareing_test(10000)
 
 # ✅ 1. Jakość uzyskanego rozwiązania (wartość funkcji celu)
