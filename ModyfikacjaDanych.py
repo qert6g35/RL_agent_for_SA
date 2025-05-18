@@ -14,7 +14,7 @@ import pandas as pd
 
 
 # Wczytaj dane
-df = pd.read_csv("plik.csv")
+df = pd.read_csv("G2_130K_TestsResult_pre_refactor.csv")
 
 # Filtruj tylko wiersze z nazwą zawierającą "PPO_G2_130k"
 mask = df["ts_name"].str.lower() == "ppo_g2_130k"
@@ -23,7 +23,7 @@ mask = df["ts_name"].str.lower() == "ppo_g2_130k"
 df.loc[mask, "stbv"] = df.loc[mask, "stbv"] * 10 + 5
 
 # Opcjonalnie: zapisz wynik do nowego pliku
-df.to_csv("plik_zmieniony.csv", index=False)
+df.to_csv("G2_130K_TestsResult.csv", index=False)
 
 # Podgląd zmodyfikowanych danych
 print(df[mask])

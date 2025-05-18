@@ -259,7 +259,7 @@ def make_compareing_test(NUM_TESTS):
             writer = csv.writer(csv_file)
             
             if not file_exists:
-                writer.writerow(["dim", "ts_name", "bv", "stbv"])
+                writer.writerow(["dim", "ts_name", "best_value", "steps_to_best_value"])
             
             for problem_dim, method_results in test_result.items():
                 for method_name, best_result, steps_to_best in method_results:
@@ -354,11 +354,22 @@ def make_compareing_test(NUM_TESTS):
         collect_run_result(run_results,new_problem.getDimention())
         if i % 1 == 0:
             save_flat_sa_results_to_csv()
-h = "y"            
-while(h == "y"):
-    make_ploting_test()
-    h = input("continue?:")
+
+
+# h = "y"            
+# while(h == "y"):
+#     make_ploting_test()
+#     h = input("continue?:")
+
+
+
 #make_compareing_test(10000)
+
+
+compareTempSheduler()
+
+
+
 
 # ✅ 1. Jakość uzyskanego rozwiązania (wartość funkcji celu)
 # Podstawowe kryterium.
