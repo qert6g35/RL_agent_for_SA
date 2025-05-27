@@ -412,3 +412,18 @@ Parametry PPO zmienione
 uczenie znacznie dłuższe mniejsze kroki uczenia (lr mniejszy).
 
 W envie BARDZO małe zmiany śladowe poprawki w zasadzie
+
+
+
+
+
+                G6                G6                G6                G6                G6                G6                G6
+
+        OSŁABIENIE NAGRODY ZA COLDSTEPSY, AGNET GRINDOWAŁ NAGRODĘ ZA stepsy w cold_seraching
+    cold_seraching += 0.08  >>>>  cold_seraching += 0.03
+                if new_observation[-5]< 0.08 and abs(new_observation[-2]) < 0.0075 and good_trends > 0.001: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                cold_seraching += 0.035
+
+
+    dodatkowo zmiana w wyłapywaniu cold_walk_punishment
+                if new_observation[-5] < 0.081: <<<< 0.04

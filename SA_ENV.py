@@ -40,7 +40,7 @@ class SA_env(gym.Env):
             self.actions = [0.95, 0.97, 0.99, 1.0, 1.01, 1.03, 1.05]#self.actions = [0.95, 0.96, 0.97, 0.98, 0.99, 1.0, 1.01, 1.02, 1.03, 1.04, 1.05]#[float(f) * 0.01 for f in range(80,121,4)]#[0.8, 0.84, 0.88, 0.92, 0.96, 1.0, 1.04, 1.08, 1.12, 1.16, 1.2]
         self.action_space = gym.spaces.Discrete(len(self.actions))
         self.max_steps = 10000
-        self.reward_lowerd_steps = 0.08 * self.max_steps
+        self.reward_lowerd_steps = 0.02 * self.max_steps
         self.total_reward = 0
         self.total_improvment = 0
         self.total_range_punhishment = 0
@@ -95,7 +95,7 @@ class SA_env(gym.Env):
                 self.SA = SA.SA()
             self.max_steps = self.estimate_sa_steps()
             self.SA_steps = int(self.max_steps / self.steps_per_temp)
-            self.reward_lowerd_steps = 0.08 * self.SA_steps
+            self.reward_lowerd_steps = 0.02 * self.SA_steps
             # elements that should change when SA is 
             deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
             if deltaEnergy <= 0:
@@ -135,7 +135,7 @@ class SA_env(gym.Env):
         self.stesp_of_stagnation
         self.max_steps = self.estimate_sa_steps()
         self.SA_steps = int(self.max_steps / self.steps_per_temp)
-        self.reward_lowerd_steps = 0.08 * self.SA_steps
+        self.reward_lowerd_steps = 0.02 * self.SA_steps
         
         self.last_temps = deque([0.5 for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
         #print("we have starting temp:",self.starting_temp)
@@ -246,7 +246,7 @@ class SA_env(gym.Env):
 
         #! spłaszczenie nagrody w początkowym stadium przeszukiwania
         if self.SA.steps_done < self.reward_lowerd_steps:
-            reward = reward * (self.SA.steps_done/self.reward_lowerd_steps)  
+            reward = max(reward * (self.SA.steps_done/self.reward_lowerd_steps) , 0.25)
         
         #! kary za przekroczenie granic temperaturowych
         range_punhishment = 0
@@ -277,9 +277,9 @@ class SA_env(gym.Env):
         too_fast_changes_long = 0
         if self.use_time_temp_info:
             if new_observation[-4]>0.03:
-                too_fast_changes_short -= 0.06
+                too_fast_changes_short -= 0.04
             if new_observation[-3]>0.04: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                too_fast_changes_long -= 0.06
+                too_fast_changes_long -= 0.04
         reward += too_fast_changes_short
         reward += too_fast_changes_long
 
@@ -287,7 +287,7 @@ class SA_env(gym.Env):
         good_trends = 0
         if self.use_time_temp_info:
             if (new_observation[-1]>0 and new_observation[-2]>0) or (new_observation[-1]<0 and new_observation[-2]<0): #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                good_trends += 0.015 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
+                good_trends += 0.0075 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
         reward += good_trends
         
         #! kara za zmianę gówngo trendu tak żeby agent znie zmienial go za czensto
@@ -301,8 +301,8 @@ class SA_env(gym.Env):
         #? drobna nagroda za utrzymywanie małych (bliskich 0) wartości trendu w okolicach wychładzania
         cold_seraching = 0
         if self.use_time_temp_info:
-            if new_observation[-5]< 0.04 and abs(new_observation[-2]) < 0.0085: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                cold_seraching += 0.08
+            if new_observation[-5]< 0.08 and abs(new_observation[-2]) < 0.0075 and good_trends > 0.001: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                cold_seraching += 0.015
         reward += cold_seraching
         self.total_cold_slow_changes += cold_seraching
 
@@ -344,15 +344,15 @@ class SA_env(gym.Env):
     def stepsInWrongRangePunishment(self,new_observation):
         cold_walk_punishment = 0
         hot_walk_punishment = 0
-        if new_observation[-5] < 0.04:
-            cold_walk_punishment -= 0.005
+        if new_observation[-5] < 0.081:
+            cold_walk_punishment -= 0.0025
             self.stesp_in_cold += 1
             self.stesp_in_hot = 0
         elif self.stesp_in_cold > 0:
             self.stesp_in_cold -= 2 
 
         if new_observation[-5] > 0.4:
-            hot_walk_punishment -= 0.005
+            hot_walk_punishment -= 0.0025
             self.stesp_in_hot += 1
             self.stesp_in_cold = 0
         elif self.stesp_in_hot > 0:
@@ -362,9 +362,9 @@ class SA_env(gym.Env):
         if self.steps_without_correction <= 1:
             self.stesp_in_cold = 0
         
-        if(self.stesp_in_cold > 3):#! nowy element w G2, opuźniamy karę za chłodzenie
-            cold_walk_punishment -= (self.stesp_in_cold - 3)/self.SA_steps * 0.2
-        hot_walk_punishment -= self.stesp_in_hot/self.SA_steps * 0.05
+        if(self.stesp_in_cold > 5):#! nowy element w G2, opuźniamy karę za chłodzenie
+            cold_walk_punishment -= (self.stesp_in_cold - 5)/self.SA_steps * 0.1
+        hot_walk_punishment -= self.stesp_in_hot/self.SA_steps * 0.025
        # print(self.stesp_in_cold,cold_walk_punishment,self.stesp_in_hot,hot_walk_punishment)
         return cold_walk_punishment,hot_walk_punishment
         

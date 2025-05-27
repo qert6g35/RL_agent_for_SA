@@ -211,7 +211,7 @@ def make_ploting_test():
         #("G2_130k_2",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         ("G3_Best1",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         ("G3_Best2",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("G3_Best3",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("G3_Best3",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         # ("G3_9k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         # ("G3_17k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         # ("G3_29k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
@@ -227,9 +227,9 @@ def make_ploting_test():
     #NN_TS[1][2].temp_short_size = 5
 
     NN_load_paths = [
-        "PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",
-        "PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",
-        "PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
+        "PPO_2025_05_27_10_58_value31.779523561808144_envs_updated600",
+        "PPO_2025_05_27_10_58_value29.677598695379164_envs_updated5250",
+        #"PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
         #"NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",
         #"NN_Models\PPO\G3\PPO_2025_05_18_23_00_Best1",
     ]
