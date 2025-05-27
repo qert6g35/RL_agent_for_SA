@@ -53,9 +53,12 @@ class LinearScheduler_FirstKind(TempSheduler):
         return self.getTemp(args[0])
 
 class ConstTempSheduler(TempSheduler):
-    def __init__(self,temp:int = None):
-        if temp is not None:
-            self.const_temp = temp
+    def __init__(self, start_temp: float = 1.1, end_temp: float = 0.1, total_steps: int = 1):
+        self.reset(start_temp,end_temp,total_steps)
+
+    def reset(self, start_temp: float, end_temp: float, total_steps: int):
+        if start_temp is not None:
+            self.const_temp = (start_temp + end_temp)/2
         else:
             self.const_temp = 100
 

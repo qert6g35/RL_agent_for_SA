@@ -19,6 +19,17 @@ from typing import List
 import os
 import csv
 
+def estimate_sa_steps(n = 0):
+    if n <= 100:
+        alpha = 15.0
+        min_steps = 15000
+    elif n <= 200:
+        alpha = 11.0
+        min_steps = estimate_sa_steps(100)
+    elif n <= 500:
+        alpha = 8
+        min_steps = estimate_sa_steps(200)
+    return min(max(int(alpha * (n ** 1.59)),min_steps),1e5)
 
 def plot_SA_output(lbest_values_list,lcurrent_values_list,ltemp_values_list,dbest_values_list,dcurrent_values_list,dtemp_values_list):
         # Creating subplots
@@ -91,9 +102,9 @@ def TestGivenTempSheduler(TSM):
     return best_values_list,current_values_list,temp_values_list
 
 def compareTempSheduler():
-    start = 100
-    end = 1
-    steps = 1000
+    start = 2500
+    end = 100
+    steps = estimate_sa_steps(n = 200)
     # TS: List[TempSheduler.TempSheduler] = [
     #     TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
     #     TempSheduler.LinearScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
@@ -114,7 +125,9 @@ def compareTempSheduler():
 
     TS: List[TempSheduler.TempSheduler] = [
         #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        
         TempSheduler.LinearScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
+        TempSheduler.ConstTempSheduler(start_temp=start,end_temp=end,total_steps=steps),
 
         #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
         TempSheduler.ReciprocalScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
@@ -127,8 +140,9 @@ def compareTempSheduler():
         #TempSheduler.LogarithmicTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
         TempSheduler.LogarithmicScheduler_FirstKind(start_temp=start,end_temp=end,total_steps=steps),
         TempSheduler.LogarithmicScheduler_SecondKind(start_temp=start,end_temp=end,total_steps=steps),        
+        
     ]
-    TS_type_number = [1,2,2,2]
+    TS_type_number = [2,2,2,2]
 
     data = [ [] for _ in TS]
     steps_lsit = []
@@ -139,14 +153,14 @@ def compareTempSheduler():
             data[i].append(TS[i].getTemp(step=step))
     
     # Tworzenie subplotów 2x2
-    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+    fig, axs = plt.subplots(2, 2, figsize=(12, 10))
     fig.suptitle("Porównanie różnych harmonogramów temperatury", fontsize=14)
 
     id_0 = 0
     id_1 = 0
     global_done = 0
     plot_color = ["orange","green","blue"]
-    plot_title = ["Linear","Reciprocal","Geometric","Logarithmic"]
+    plot_title = ["Linear&Const","Reciprocal","Geometric","Logarithmic"]
     labels = ["first","second"]
     for num_of_data in TS_type_number:
         axs[id_0, id_1].set_title(plot_title.pop(0))
@@ -159,6 +173,7 @@ def compareTempSheduler():
         else:
             id_0 = 0
             id_1 = 1
+
             
     for ax in axs.flat:
         ax.set(xlabel='Krok', ylabel='Temperatura')
@@ -170,8 +185,6 @@ def make_ploting_test():
     env7 = SA_ENV.SA_env(use_observation_divs=True,use_time_temp_info=False)
     env10 = SA_ENV.SA_env()
     # DQN_model = DuelingDQN_NN()
-    print(env7.observation_space.shape[0])
-    print(env10.observation_space.shape[0])
     # DQN_nn_999 = DuelingDQN_NN(len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
     # DQN_nn_999.load_state_dict(torch.load('NN_Models/DQN/DuelingDQN/E/SMART_TSP/DQN_NN_2025_04_17_01_04_eps999'))
 
@@ -194,13 +207,37 @@ def make_ploting_test():
         #("PPO_F2_75k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         #("PPO_F2_100k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         # ("PPO_F2_83k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        # ("PPO_F2_166k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_G2_65k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("PPO_G2_130k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("G2_130k_1",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("G2_130k_2",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G3_Best1",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G3_Best2",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G3_Best3",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("G3_9k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("G3_17k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("G3_29k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("G3_35k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("G3_40k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        # ("G3_46k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("G3_58k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
     ]
 
-    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates65050'))
-    NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200'))
+   #NN_TS[0][2].temp_history_size = 50
+    #NN_TS[0][2].temp_short_size = 10
+    #NN_TS[1][2].temp_history_size = 25
+    #NN_TS[1][2].temp_short_size = 5
+
+    NN_load_paths = [
+        "PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",
+        "PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",
+        "PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
+        #"NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",
+        #"NN_Models\PPO\G3\PPO_2025_05_18_23_00_Best1",
+    ]
+
+    for path_id in range(len(NN_load_paths)):
+        NN_TS[path_id][1].load_state_dict(torch.load(NN_load_paths[path_id]))
+    #NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates65050'))
+    #NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200'))
     # NN_TS[2][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates249980'))
     # NN_TS[3][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates255480'))
     #NN_TS[4][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160'))
@@ -298,13 +335,23 @@ def make_compareing_test(NUM_TESTS):
     # DQN_model = DuelingDQN_NN()
 
     NN_TS = [
-        ("PPO_G2_130k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env())
+        ("G2_130k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G3_Best1",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G3_58K",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
     ]
 
-    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200'))
+    NN_TS[0][2].temp_history_size = 25
+    NN_TS[0][2].temp_short_size = 5
+
+    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2'))
+    NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1'))
+    NN_TS[2][1].load_state_dict(torch.load('PPO_2025_05_18_23_00_updates58590'))
+
+
 
     TS: List[TempSheduler.TempSheduler] = [
         #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
+        ("Const_50",TempSheduler.ConstTempSheduler(),SA.SA(skip_initialization=True)),
         ("Linear",TempSheduler.LinearScheduler_FirstKind(),SA.SA(skip_initialization=True)),
 
         #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
@@ -333,10 +380,11 @@ def make_compareing_test(NUM_TESTS):
 
         t_max = NN_TS[0][2].starting_temp
         t_min = NN_TS[0][2].min_temp
+        #t_min = NN_TS[0][2].min_temp
         # LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
 
         for tuple in TS:
-            tuple[1].reset(t_max,t_min,DQN_SA_engine.max_steps)
+            tuple[1].reset(t_max,t_min,estimate_sa_steps(new_problem.dim))
             tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution)
 
 
@@ -348,7 +396,7 @@ def make_compareing_test(NUM_TESTS):
             
         for tuple in TS:
             run_results[tuple[0]] = tuple[2].run(
-                max_steps=DQN_SA_engine.max_steps, 
+                max_steps=estimate_sa_steps(new_problem.dim), 
                 temp_shadeuling_model=tuple[1])
         
         collect_run_result(run_results,new_problem.getDimention())
@@ -362,8 +410,7 @@ while(h == "y"):
     h = input("continue?:")
 
 
-
-#make_compareing_test(10000)
+#make_compareing_test(2000)
 
 
 #compareTempSheduler()

@@ -45,38 +45,38 @@ class PPO:
         #params
         # parametry związane GAE
         self.use_gae = True
-        self.gamma = 0.97
-        self.gae_lambda = 0.9
+        self.gamma = 0.98
+        self.gae_lambda = 0.933
         # parametry związane z lr i jego updatem
-        self.starting_lr = 0.0005
+        self.starting_lr = 0.00005
         self.min_lr = 5e-6
         self.update_lr = True
         # podstawowe okreslające uczenie 
         self.seed = 25
         self.num_envs = 10
-        self.num_steps = 512 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
-        self.num_of_minibatches = 10 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 200000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.num_steps = 1024 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
+        self.num_of_minibatches = 16 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
+        self.total_timesteps = 350000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
         self.lr_cycle = int(self.total_timesteps)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
         print("total_timesteps:",self.total_timesteps)
-        self.update_epochs = 1 # uwaga tutaj ustalamy, ile razy chcemy przejść przez cały proces uczenia na tych samych danych
+        self.update_epochs = 2 # uwaga tutaj ustalamy, ile razy chcemy przejść przez cały proces uczenia na tych samych danych
 
         self.use_adv_normalization = True # flaga która decyduje czy adventage powinno być normalizowane
 
         #clipping params
         self.clip_coef = 0.125 # używane do strategi clippingu zaproponowanego w PPO
         self.clip_vloss = False # ! UWAGA WYŁĄCZLIŚMY BO DEEPSEEK MÓWI ŻE LEPSZE DO RZADKO SPOTYKANYCH NAGRÓD
-        self.max_grad_norm = 0.5 # maksymalna zmiana wag w sieci 
+        self.max_grad_norm = 0.6 # maksymalna zmiana wag w sieci 
 
         #Entropy loss params
-        self.ent_coef = 0.1 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
-        self.vf_coef = 0.25 # w jakim stopniu minimalizujemy value loss w porównaniu do minimalizowania błędu na wyjściu sieci
+        self.ent_coef = 0.025 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
+        self.vf_coef = 0.45 # w jakim stopniu minimalizujemy value loss w porównaniu do minimalizowania błędu na wyjściu sieci
 
         # parametr ograniczający zbyt duże zmiany w kolejnych iteracjach
-        self.target_kl = None # defaoult_value = 0.015
+        self.target_kl = 0.02 # defaoult_value = 0.015
 
         #parametry zapisu agenta
         if save_agent_path == None:
@@ -220,7 +220,7 @@ class PPO:
                 next_obs, next_done = torch.Tensor(next_obs).to(self.device), torch.Tensor(done).to(self.device)
 
                 if "total" in info:
-                    #print(info)
+                    print(info)
                     for env_id in range(len(info["total"])):
                         for key, values in info.items():
                             if key[0] != '_':

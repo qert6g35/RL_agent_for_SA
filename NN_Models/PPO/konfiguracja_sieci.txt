@@ -307,3 +307,89 @@ Zmiany w uczeniu PPO:
 
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
+
+
+
+
+
+        G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4
+
+
+Wnioski z G3
+
+REWARD IMPROVMENT Z ZAKRESU (60-90)
+
+
+
+- trendy (wygląda jak utrzymana, minimalnie za mała)
+
+    - reward_slow_clod_changes (minimalizuje nagrodę !!!!! ??????)
+
+- reward_range (good)
+
+    - reward_noice_short (!! mocna minimalizacji wartosci ZA DUŻE (-120 <> -40))
+
+    - reward_noice_long (szybko udało mu się ją sprowadzić do małych wartości) (zaczą wybierać tylko słabsze sterowania, Może wypada ograniczyć ilość sterowań i zwiększyń nieco sieć ????)
+
+- reward_no_improvment (utrzymany const szum chyba nie potrzeba bo nachodzi się z reward_improvment i może wprowadzać odatkowy szum)
+
+        #- reward_hot (ABSURADLNIE DUŻE WARTOŚCI OKRESOWO)
+
+        #- reward_cold (bardzo DUŻE WARTOŚCI OKRESOWO)
+
+
+
+        CO ZMIENIONO (OSTATNIE GIGA UCZENIE)
+
+
+1) uproszczenie sterowania ???
+
+self.actions = [0.95, 0.97, 0.99, 1.0, 1.01, 1.03, 1.05]
+
+2)
+
+
+
+zmnieszenie kar za hot i cold walk do tego 
+
+cold_walk_punishment -= 0.005 (trzykrotnie mniej)
+hot_walk_punishment -= 0.005 (trzykrotnie mniej)
+
+if(self.stesp_in_cold > 5):
+    cold_walk_punishment -= (self.stesp_in_cold - 5)/self.SA_steps * 0.1 (dwukrotnie mniej)
+hot_walk_punishment -= self.stesp_in_hot/self.SA_steps * 0.05 (trzykrotnie mniej)
+
+
+
+
+
+0.02 >> 0.01
+\/ \/ \/
+reward = reward - new_observation[3] * 0.01 # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
+        self.total_no_improvment -= new_observation[3] * 0.01 
+
+
+
+osłabienie kar za szum 
+
+            if new_observation[-4]>0.04:
+                too_fast_changes_short -= 0.04
+            if new_observation[-3]>0.03: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                too_fast_changes_long -= 0.04
+
+
+
+
+
+bardzo delkiatnw wzmonienie nagrody za trendy 
+
+0.012
+\/  \/  \/
+0.015
+
+
+
+wzmonienie nagrody za małe zmiany w chłodzie 
+
+            if new_observation[-5]< 0.0375 and abs(new_observation[-2]) < 0.0075: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+                cold_seraching += 0.025

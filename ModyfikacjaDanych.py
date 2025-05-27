@@ -14,16 +14,16 @@ import pandas as pd
 
 
 # Wczytaj dane
-df = pd.read_csv("G2_130K_TestsResult_pre_refactor.csv")
+df = pd.read_csv("sa_results.csv")
 
 # Filtruj tylko wiersze z nazwą zawierającą "PPO_G2_130k"
-mask = df["ts_name"].str.lower() == "ppo_g2_130k"
+mask = df["ts_name"].str.lower().isin(["g2_130k", "g3_best1", "g3_58k"])
 
 # Pomnóż wartość w kolumnie 'stbv' przez np. 2 (możesz zmienić na dowolną wartość)
-df.loc[mask, "stbv"] = df.loc[mask, "stbv"] * 10 + 5
+df.loc[mask, "steps_to_best_value"] = df.loc[mask, "steps_to_best_value"] * 10 + 5
 
 # Opcjonalnie: zapisz wynik do nowego pliku
-df.to_csv("G2_130K_TestsResult.csv", index=False)
+df.to_csv("sa_results_refactored.csv", index=False)
 
 # Podgląd zmodyfikowanych danych
 print(df[mask])
