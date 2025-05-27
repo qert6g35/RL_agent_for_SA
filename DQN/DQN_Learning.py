@@ -204,6 +204,14 @@ class DQN:
         if os.path.exists("DQN_NN_"+verssioning+"_eps"+str(episode-1)) and (eps%200 != 0 or eps == 1):
             os.remove("DQN_NN_"+verssioning+"_eps"+str(episode-1))
 
+    def save_model(self,updates):
+        if(updates%10 == 0):
+            save_update = updates - updates%10
+            check_point =  int((self.total_timesteps // self.batch_size) / 20) - int((self.total_timesteps // self.batch_size) / 20)%10
+            torch.save(self.agent.state_dict(), self.save_agent_path+"_updates"+str(save_update + self.vers_offset))
+            if int(save_update%check_point) != 0:
+                self.delete_model(save_update + self.vers_offset - 10)
+
     # def sampleMemoryBatch(self):
     #     if self.batch_size <= len(self.memory):
     #         return self.memory.sample(batch_size=self.batch_size)

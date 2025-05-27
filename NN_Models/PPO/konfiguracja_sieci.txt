@@ -393,3 +393,22 @@ wzmonienie nagrody za małe zmiany w chłodzie
 
             if new_observation[-5]< 0.0375 and abs(new_observation[-2]) < 0.0075: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
                 cold_seraching += 0.025
+
+
+
+
+
+
+
+
+
+
+
+
+                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                G5                 H                 H                 H                 H                 H                 H                 H                 H
+
+Parametry PPO zmienione 
+
+uczenie znacznie dłuższe mniejsze kroki uczenia (lr mniejszy).
+
+W envie BARDZO małe zmiany śladowe poprawki w zasadzie

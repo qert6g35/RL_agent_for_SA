@@ -21,13 +21,13 @@ import csv
 
 def estimate_sa_steps(n = 0):
     if n <= 100:
-        alpha = 15.0
-        min_steps = 15000
-    elif n <= 200:
         alpha = 11.0
+        min_steps = 10000
+    elif n <= 200:
+        alpha = 8.0
         min_steps = estimate_sa_steps(100)
     elif n <= 500:
-        alpha = 8
+        alpha = 5
         min_steps = estimate_sa_steps(200)
     return min(max(int(alpha * (n ** 1.59)),min_steps),1e5)
 

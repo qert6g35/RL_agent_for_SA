@@ -48,16 +48,16 @@ class PPO:
         self.gamma = 0.98
         self.gae_lambda = 0.933
         # parametry związane z lr i jego updatem
-        self.starting_lr = 0.00005
-        self.min_lr = 5e-6
+        self.starting_lr = 0.0001
+        self.min_lr = 1e-6
         self.update_lr = True
         # podstawowe okreslające uczenie 
         self.seed = 25
         self.num_envs = 10
         self.num_steps = 1024 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 16 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały
-        self.total_timesteps = 350000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
-        self.lr_cycle = int(self.total_timesteps)
+        self.total_timesteps = 500000000 # określamy łączną maksymalna ilosć korków jakie łącznie mają zostać wykonane w środowiskach
+        self.lr_cycle = int(self.total_timesteps//2)
         # batch to seria danych w uczeniu, czyli na jedną pętlę zmierzemy tyle danych łącznie, a minibatch to seria ucząća i po seri zbierania danych, rozbijamy je na num_of_minibatches podgrup aby na tej podstawie nauczyć czegoś agenta
         self.batch_size = int(self.num_envs * self.num_steps)# training_batch << batch treningu określa ile łączeni stepów środowisk ma być wykonanych na raz przed updatem sieci na podstwie tych kroków
         self.minibatch_size = int(self.batch_size // self.num_of_minibatches)# rozmiar danych uczących na jeden raz
@@ -69,7 +69,7 @@ class PPO:
         #clipping params
         self.clip_coef = 0.125 # używane do strategi clippingu zaproponowanego w PPO
         self.clip_vloss = False # ! UWAGA WYŁĄCZLIŚMY BO DEEPSEEK MÓWI ŻE LEPSZE DO RZADKO SPOTYKANYCH NAGRÓD
-        self.max_grad_norm = 0.6 # maksymalna zmiana wag w sieci 
+        self.max_grad_norm = 0.5 # maksymalna zmiana wag w sieci 
 
         #Entropy loss params
         self.ent_coef = 0.025 # w jakim stopniu maksymalizujemy enthropy w porównaniu do minimalizacji błędu wyjścia sieci
