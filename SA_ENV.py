@@ -66,7 +66,7 @@ class SA_env(gym.Env):
         #print("there will be no reward for first steps:",self.no_reward_steps)
         
         self.run_history = []
-        self.norm_reward_scale = 10.0
+        self.norm_reward_scale = 8.0
         self.temp_history_size = 40
         self.temp_short_size = 8
         self.last_temps = deque([0.5 for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
@@ -237,8 +237,7 @@ class SA_env(gym.Env):
         reward = 0.0
         
         if improvement > 0:
-            reward = self.norm_reward_scale * improvement
-            reward = min(math.log1p(reward * self.SA.steps_done)*2,10)
+            reward = min(math.log1p(reward * self.SA.steps_done)*self.norm_reward_scale,self.norm_reward_scale)
 
             if self.SA.steps_done > self.max_steps * 0.2:
                 reward = max(2,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
@@ -277,9 +276,9 @@ class SA_env(gym.Env):
         too_fast_changes_short = 0
         too_fast_changes_long = 0
         if self.use_time_temp_info:
-            if new_observation[-4]>0.04:
+            if new_observation[-4]>0.03:
                 too_fast_changes_short -= 0.06
-            if new_observation[-3]>0.03: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
+            if new_observation[-3]>0.04: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
                 too_fast_changes_long -= 0.06
         reward += too_fast_changes_short
         reward += too_fast_changes_long
@@ -303,7 +302,7 @@ class SA_env(gym.Env):
         cold_seraching = 0
         if self.use_time_temp_info:
             if new_observation[-5]< 0.04 and abs(new_observation[-2]) < 0.0085: #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                cold_seraching += 0.075
+                cold_seraching += 0.08
         reward += cold_seraching
         self.total_cold_slow_changes += cold_seraching
 
