@@ -58,7 +58,7 @@ class ConstTempSheduler(TempSheduler):
 
     def reset(self, start_temp: float, end_temp: float, total_steps: int):
         if start_temp is not None:
-            self.const_temp = (start_temp + end_temp)/2
+            self.const_temp = start_temp 
         else:
             self.const_temp = 100
 
@@ -215,7 +215,7 @@ class LogarithmicScheduler_SecondKind:
     def getTemp(self, step: int):
         log_t1 = math.log(self.T - step + 2)
         denominator = self.l * self.log_T1 - self.f * self.log_2 + (self.f - self.l) * log_t1
-        return self.numerator / denominator
+        return self.l + self.f - self.numerator / denominator
     
     def __call__(self, *args, **kwds):
         return self.getTemp(args[0])

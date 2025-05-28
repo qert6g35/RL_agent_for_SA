@@ -431,6 +431,8 @@ W envie BARDZO małe zmiany śladowe poprawki w zasadzieG6
 
     NAJNOWSZE OBSERWACJE SUGEROWAŁY PRZYTŁOCZENIE NAGRODĄ ZA TRENDY 
 
-    zmniejszenie wsp. za trendy z 0.0125 >> 0.004
+    zmniejszenie wsp. za trendy z 0.0125 >> 0.0025
 
-            self.norm_reward_scale = 12.0 (było 8.0) trochę podnosimy nagrodę za zmalezienie lepszego rozw. 
+            self.norm_reward_scale = 20.0 (było 8.0) trochę podnosimy nagrodę za zmalezienie lepszego rozw. 
+
+            teraz na koniec mnożmymy wszystkie nagrody * 100 nawet improvment jest to nadal główna nagroda 

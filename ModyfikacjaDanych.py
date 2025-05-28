@@ -29,7 +29,7 @@ import pandas as pd
 #print(df[mask])
 
 
-def estimate_sa_steps(n):
+def estimate_sa_steps1(n):
     if n <= 100:
         alpha = 11.0
         min_steps = 10000
@@ -45,16 +45,16 @@ def estimate_sa_steps(n):
 
     return min(max(int(alpha * (n ** 1.59)), min_steps), int(1e5))
 
-def estimate_sa_steps2(n):
+def estimate_sa_steps(n):
     if n <= 100:
         alpha = 15.0
         min_steps = 15000
     elif n <= 200:
         alpha = 11.0
-        min_steps = estimate_sa_steps2(100)
+        min_steps = estimate_sa_steps(100)
     elif n <= 500:
         alpha = 8.0
-        min_steps = estimate_sa_steps2(200)
+        min_steps = estimate_sa_steps(200)
     else:
         # Zakładamy, że funkcja ma działać do 500, jak w oryginale
         return 100000  # wartość ograniczona przez 1e5
@@ -62,17 +62,17 @@ def estimate_sa_steps2(n):
     return min(max(int(alpha * (n ** 1.59)), min_steps), int(1e5))
 
 # Zakres wartości n do wykresu
-n_values = np.arange(10, 501)
+n_values = np.arange(50, 301)
 step_values = [estimate_sa_steps(n) for n in n_values]
-step_values2 = [estimate_sa_steps2(n) for n in n_values]
+#step_values2 = [estimate_sa_steps2(n) for n in n_values]
 
 # Rysowanie wykresu
 plt.figure(figsize=(10, 6))
-plt.plot(n_values, step_values, label="estimate_sa_steps(n)")
-plt.plot(n_values, step_values2, label="estimate_sa_steps(n)",color="green")
-plt.xlabel("n")
-plt.ylabel("Liczba kroków (steps)")
-plt.title("Wartości estimate_sa_steps(n) w zależności od n")
+plt.plot(n_values, step_values)
+#plt.plot(n_values, step_values2, label="estimate_sa_steps(n)",color="green")
+plt.xlabel("n (rozmiar problemu TSP)")
+plt.ylabel("Liczba kroków (max steps)")
+plt.title("Wartości maksymalnej liczby kroków w zależności od rozmiaru problemu TSP")
 plt.grid(True)
 plt.legend()
 plt.show()

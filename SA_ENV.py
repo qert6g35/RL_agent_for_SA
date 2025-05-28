@@ -66,7 +66,7 @@ class SA_env(gym.Env):
         #print("there will be no reward for first steps:",self.no_reward_steps)
         
         self.run_history = []
-        self.norm_reward_scale = 12.0
+        self.norm_reward_scale = 20.0
         self.temp_history_size = 40
         self.temp_short_size = 8
         self.last_temps = deque([0.5 for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
@@ -240,7 +240,7 @@ class SA_env(gym.Env):
             reward = min(math.log1p(reward * self.SA.steps_done)*self.norm_reward_scale,self.norm_reward_scale)
 
             if self.SA.steps_done > self.max_steps * 0.2:
-                reward = max(2,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
+                reward = max(5,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
 
         improvment_reward = reward
 
@@ -287,7 +287,7 @@ class SA_env(gym.Env):
         good_trends = 0
         if self.use_time_temp_info:
             if (new_observation[-1]>0 and new_observation[-2]>0) or (new_observation[-1]<0 and new_observation[-2]<0): #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                good_trends += 0.004 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
+                good_trends += 0.0025 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
         reward += good_trends
         
         #! kara za zmianę gówngo trendu tak żeby agent znie zmienial go za czensto
@@ -320,6 +320,8 @@ class SA_env(gym.Env):
         #! TO MOŻE NAM POMÓC Z OGARNIĘĆIEM WYBUCHAJĄCYCH WARTOŚCI PRZY STEROWANIU
         # normalizacja nagrody
         #reward_pre_norm = reward
+        
+        reward *= 10 # ogólne wzmocnienie wszystkich nagród przed ostatecznym skróceniem (zwiększenie intensywności uczenia bez zmiany balansu nagród)
         reward = max(min(reward,self.norm_reward_scale),-self.norm_reward_scale)/self.norm_reward_scale
         #if(reward_pre_norm/self.norm_reward_scale - reward != 0):
         #    print("for temp:",teperature_factor," reward:",reward,"pre minmax reward",reward_pre_norm/self.norm_reward_scale)

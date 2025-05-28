@@ -21,13 +21,13 @@ import csv
 
 def estimate_sa_steps(n = 0):
     if n <= 100:
-        alpha = 11.0
-        min_steps = 10000
+        alpha = 15.0
+        min_steps = 15000
     elif n <= 200:
-        alpha = 8.0
+        alpha = 11.0
         min_steps = estimate_sa_steps(100)
     elif n <= 500:
-        alpha = 5
+        alpha = 8
         min_steps = estimate_sa_steps(200)
     return min(max(int(alpha * (n ** 1.59)),min_steps),1e5)
 
@@ -351,7 +351,7 @@ def make_compareing_test(NUM_TESTS):
 
     TS: List[TempSheduler.TempSheduler] = [
         #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
-        ("Const_50",TempSheduler.ConstTempSheduler(),SA.SA(skip_initialization=True)),
+        ("Const_100",TempSheduler.ConstTempSheduler(),SA.SA(skip_initialization=True)),
         ("Linear",TempSheduler.LinearScheduler_FirstKind(),SA.SA(skip_initialization=True)),
 
         #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
@@ -404,16 +404,16 @@ def make_compareing_test(NUM_TESTS):
             save_flat_sa_results_to_csv()
 
 
-h = "y"            
-while(h == "y"):
-    make_ploting_test()
-    h = input("continue?:")
+# h = "y"            
+# while(h == "y"):
+#     make_ploting_test()
+#     h = input("continue?:")
 
 
 #make_compareing_test(2000)
 
 
-#compareTempSheduler()
+compareTempSheduler()
 
 
 
