@@ -52,6 +52,7 @@ class SA_env(gym.Env):
         self.total_delta_current = 0
         self.total_no_improvment = 0
         self.total_cold_slow_changes = 0
+        self.clipped_reward = 0
         self.done = False
         self.use_observation_divs =use_observation_divs
         self.use_time_temp_info = use_time_temp_info
@@ -197,6 +198,7 @@ class SA_env(gym.Env):
         self.total_good_trends = 0
         self.total_delta_current = 0
         self.total_cold_slow_changes = 0
+        self.clipped_reward = 0
         return self.observation(), self.info() #!!! we pas none as info
     
     def makeTempChangeStep(self,action_number):
@@ -238,10 +240,11 @@ class SA_env(gym.Env):
         
         if improvement > 0:
             reward = min(math.log1p(reward * self.SA.steps_done)*self.norm_reward_scale,self.norm_reward_scale)
-
-            if self.SA.steps_done > self.max_steps * 0.2:
-                reward = max(5,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
-
+            if self.SA.steps_done > self.max_steps * 0.05:
+                if reward < 4:
+                    self.clipped_reward += 1
+                reward = max(4,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
+                
         improvment_reward = reward
 
         #! spłaszczenie nagrody w początkowym stadium przeszukiwania
@@ -287,7 +290,7 @@ class SA_env(gym.Env):
         good_trends = 0
         if self.use_time_temp_info:
             if (new_observation[-1]>0 and new_observation[-2]>0) or (new_observation[-1]<0 and new_observation[-2]<0): #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                good_trends += 0.0025 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
+                good_trends += 0.002 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
         reward += good_trends
         
         #! kara za zmianę gówngo trendu tak żeby agent znie zmienial go za czensto
@@ -320,8 +323,7 @@ class SA_env(gym.Env):
         #! TO MOŻE NAM POMÓC Z OGARNIĘĆIEM WYBUCHAJĄCYCH WARTOŚCI PRZY STEROWANIU
         # normalizacja nagrody
         #reward_pre_norm = reward
-        
-        reward *= 10 # ogólne wzmocnienie wszystkich nagród przed ostatecznym skróceniem (zwiększenie intensywności uczenia bez zmiany balansu nagród)
+        reward *= 4 # ogólne wzmocnienie wszystkich nagród przed ostatecznym skróceniem (zwiększenie intensywności uczenia bez zmiany balansu nagród)
         reward = max(min(reward,self.norm_reward_scale),-self.norm_reward_scale)/self.norm_reward_scale
         #if(reward_pre_norm/self.norm_reward_scale - reward != 0):
         #    print("for temp:",teperature_factor," reward:",reward,"pre minmax reward",reward_pre_norm/self.norm_reward_scale)
@@ -347,14 +349,14 @@ class SA_env(gym.Env):
         cold_walk_punishment = 0
         hot_walk_punishment = 0
         if new_observation[-5] < 0.081:
-            cold_walk_punishment -= 0.0025
+            cold_walk_punishment -= 0.00225
             self.stesp_in_cold += 1
             self.stesp_in_hot = 0
         elif self.stesp_in_cold > 0:
             self.stesp_in_cold -= 2 
 
         if new_observation[-5] > 0.4:
-            hot_walk_punishment -= 0.0025
+            hot_walk_punishment -= 0.00225
             self.stesp_in_hot += 1
             self.stesp_in_cold = 0
         elif self.stesp_in_hot > 0:
@@ -426,7 +428,8 @@ class SA_env(gym.Env):
                 "noice_long":self.total_too_fast_changes_long,
                 "trends":self.total_good_trends,
                 "deltaC":self.total_delta_current,
-                "slow_clod_changes":self.total_cold_slow_changes
+                "slow_clod_changes":self.total_cold_slow_changes,
+                "boosted_improvemnt":self.clipped_reward
                 }#{"current_solution":self.SA.current_solution,"best_solution":self.SA.best_solution,"current_temperature":self.current_temp}
         return {}
 
