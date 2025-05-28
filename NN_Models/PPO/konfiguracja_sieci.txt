@@ -411,7 +411,7 @@ Parametry PPO zmienione
 
 uczenie znacznie dłuższe mniejsze kroki uczenia (lr mniejszy).
 
-W envie BARDZO małe zmiany śladowe poprawki w zasadzie
+W envie BARDZO małe zmiany śladowe poprawki w zasadzieG6
 
 
 

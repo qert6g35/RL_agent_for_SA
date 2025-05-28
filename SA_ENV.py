@@ -1,6 +1,6 @@
 from ast import mod
 from cProfile import label
-from sympy import total_degree
+#from sympy import total_degree
 from DQN import DQN_Models
 from PPO import PPO_Model
 import SA
@@ -287,7 +287,7 @@ class SA_env(gym.Env):
         good_trends = 0
         if self.use_time_temp_info:
             if (new_observation[-1]>0 and new_observation[-2]>0) or (new_observation[-1]<0 and new_observation[-2]<0): #[temp_mean, temp_std_fresh,temp_std_full, temp_trend_fresh,temp_trend_full]
-                good_trends += 0.0125 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
+                good_trends += 0.005 #! osłabiamy istotność zgodnych trendów agent nad wyrost uczy się tej taktyki (zamist standardowego /2 dla wszystkich jest /2.99)
         reward += good_trends
         
         #! kara za zmianę gówngo trendu tak żeby agent znie zmienial go za czensto
