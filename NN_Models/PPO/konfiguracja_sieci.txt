@@ -427,3 +427,10 @@ W envie BARDZO małe zmiany śladowe poprawki w zasadzieG6
 
     dodatkowo zmiana w wyłapywaniu cold_walk_punishment
                 if new_observation[-5] < 0.081: <<<< 0.04
+
+
+    NAJNOWSZE OBSERWACJE SUGEROWAŁY PRZYTŁOCZENIE NAGRODĄ ZA TRENDY 
+
+    zmniejszenie wsp. za trendy z 0.0125 >> 0.0035
+
+            self.norm_reward_scale = 10.0 (było 8.0) trochę podnosimy nagrodę za zmalezienie lepszego rozw. 
