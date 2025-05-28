@@ -66,7 +66,7 @@ class SA_env(gym.Env):
         #print("there will be no reward for first steps:",self.no_reward_steps)
         
         self.run_history = []
-        self.norm_reward_scale = 10.0
+        self.norm_reward_scale = 12.0
         self.temp_history_size = 40
         self.temp_short_size = 8
         self.last_temps = deque([0.5 for _ in range(self.temp_history_size)],maxlen=int(self.temp_history_size))
@@ -268,8 +268,8 @@ class SA_env(gym.Env):
         reward += hot_steps_punishment
 
         # ! pozostałość po każe za kroki bez poprawy 
-        reward = reward - new_observation[3] * 0.0125  # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
-        self.total_no_improvment -= new_observation[3] * 0.0125 
+        reward = reward - new_observation[3] * 0.005  # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
+        self.total_no_improvment -= new_observation[3] * 0.005 
 
     
         #!! kara za zbyt gwałtowne zmiany
