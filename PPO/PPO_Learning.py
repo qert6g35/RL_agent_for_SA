@@ -52,7 +52,7 @@ class PPO:
         self.min_lr = 1e-6
         self.update_lr = True
         # podstawowe okreslające uczenie 
-        self.seed = 25
+        self.seed = 420
         self.num_envs = 10
         self.num_steps = 1024 # ilość symulatnicznych kroków wykonanych na środowiskach podczas jednego batcha zbieranych danych o srodowiskach
         self.num_of_minibatches = 16 #(ustaw == num_envs) dla celów nie gubienia żadnych danych i żeby się liczby ładne zgadzały

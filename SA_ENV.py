@@ -244,13 +244,12 @@ class SA_env(gym.Env):
                 if reward < 4:
                     self.clipped_reward += 1
                 reward = max(4,reward)  # bonus za poprawę po jakimś czasie #math.log(reward * self.SA.steps_done + 1)*10  #reward * (math.pow(self.SA.steps_done + 1,2)/2) #(math.log(self.SA.steps_done + 1)/2)
-                
+            #! spłaszczenie nagrody w początkowym stadium przeszukiwania
+            if self.SA.steps_done < self.reward_lowerd_steps:
+                reward = max(reward * (self.SA.steps_done/self.reward_lowerd_steps) , 0.5)
+        
         improvment_reward = reward
 
-        #! spłaszczenie nagrody w początkowym stadium przeszukiwania
-        if self.SA.steps_done < self.reward_lowerd_steps:
-            reward = max(reward * (self.SA.steps_done/self.reward_lowerd_steps) , 0.25)
-        
         #! kary za przekroczenie granic temperaturowych
         range_punhishment = 0
         if was_temp_lower_than_min:
@@ -271,8 +270,8 @@ class SA_env(gym.Env):
         reward += hot_steps_punishment
 
         # ! pozostałość po każe za kroki bez poprawy 
-        reward = reward - new_observation[3] * 0.005  # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
-        self.total_no_improvment -= new_observation[3] * 0.005 
+        reward = reward - new_observation[3] * 0.0012  # ten wsp już jest znormalizowany więc kara rośnie aż do 2 (ale dowolna poprawa max value zresetuje tą karę)
+        self.total_no_improvment -= new_observation[3] * 0.0012
 
     
         #!! kara za zbyt gwałtowne zmiany

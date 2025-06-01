@@ -161,13 +161,14 @@ def compareTempSheduler():
     global_done = 0
     plot_color = ["orange","green","blue"]
     plot_title = ["Linear&Const","Reciprocal","Geometric","Logarithmic"]
-    labels = ["first","second"]
-    for num_of_data in TS_type_number:
+    labels = ["linear","const_max"]
+    for i in range(4):
         axs[id_0, id_1].set_title(plot_title.pop(0))
-        for id in range(num_of_data):
+        for id in range(2):
             axs[id_0, id_1].plot(steps_lsit, data[id + global_done],label = labels[id],color = plot_color[id])
-
-        global_done += num_of_data
+        axs[id_0, id_1].legend()
+        labels = ["first","second"]
+        global_done += 2
         if id_0 == 0:
             id_0 = 1
         else:
@@ -178,7 +179,7 @@ def compareTempSheduler():
     for ax in axs.flat:
         ax.set(xlabel='Krok', ylabel='Temperatura')
         ax.grid(True)
-    plt.legend()
+    #plt.legend()
     plt.show()
 
 def make_ploting_test():
@@ -199,7 +200,6 @@ def make_ploting_test():
 
     # PPO_nn_6563 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
     # PPO_nn_6563.load_state_dict(torch.load('PPO_2025_04_22_21_52_updates6563'))
-
     NN_TS = [
         #("PPO_F1_25k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         #("PPO_F2_25k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
@@ -209,8 +209,23 @@ def make_ploting_test():
         # ("PPO_F2_83k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         #("G2_130k_1",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         #("G2_130k_2",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("G3_Best1",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
-        ("G3_Best2",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        
+        
+        
+        
+        #("E",PPO_NN_v2( None,env10.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        #("F",PPO_NN_v2( None,env10.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        #("G",PPO_NN_v2( None,env10.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        #("G2",PPO_NN_v2( None,env10.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        #("G3",PPO_NN_v2( None,env10.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        #("G4",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        #("G6",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G6_1",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G6_2",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G6_3",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G6_4",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+        ("G6_5",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
+
         #("G3_Best3",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         # ("G3_9k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         # ("G3_17k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
@@ -220,22 +235,30 @@ def make_ploting_test():
         # ("G3_46k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
         #("G3_58k",PPO_NN_v2( None,env10.observation_space.shape[0],env10.action_space.n),SA_ENV.SA_env()),
     ]
-
-   #NN_TS[0][2].temp_history_size = 50
-    #NN_TS[0][2].temp_short_size = 10
-    #NN_TS[1][2].temp_history_size = 25
-    #NN_TS[1][2].temp_short_size = 5
-
+    
     NN_load_paths = [
-        "PPO_2025_05_27_10_58_value31.779523561808144_envs_updated600",
-        "PPO_2025_05_27_10_58_value29.677598695379164_envs_updated5250",
+        #["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
+        #["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
+        #["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
+        #["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
+        #["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
+        #["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
+        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
+        ["NN_Models\PPO\G6_with_offset_onFiew_first_steps\PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models\PPO\G6_with_offset_onFiew_first_steps\PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models\PPO\G6_with_offset_onFiew_first_steps\PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models\PPO\G6_with_offset_onFiew_first_steps\PPO_2025_05_27_20_44_value9.602480882611053_envs_updated2730",8,40],
+        ["NN_Models\PPO\G6_with_offset_onFiew_first_steps\PPO_2025_05_27_20_44_value9.076998617822289_envs_updated5525",8,40],
         #"PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
         #"NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",
-        #"NN_Models\PPO\G3\PPO_2025_05_18_23_00_Best1",
+        #"NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",
     ]
 
     for path_id in range(len(NN_load_paths)):
-        NN_TS[path_id][1].load_state_dict(torch.load(NN_load_paths[path_id]))
+        print("loading:",NN_load_paths[path_id][0])
+        NN_TS[path_id][1].load_state_dict(torch.load(NN_load_paths[path_id][0]))
+        NN_TS[0][2].temp_history_size = NN_load_paths[path_id][2]
+        NN_TS[0][2].temp_short_size = NN_load_paths[path_id][1]
     #NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates65050'))
     #NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200'))
     # NN_TS[2][1].load_state_dict(torch.load('PPO_2025_05_06_22_21_updates249980'))
@@ -335,17 +358,37 @@ def make_compareing_test(NUM_TESTS):
     # DQN_model = DuelingDQN_NN()
 
     NN_TS = [
-        ("G2_130k",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G3_Best1",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G3_58K",PPO_NN_v2( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("E",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("F",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G4",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
     ]
 
-    NN_TS[0][2].temp_history_size = 25
-    NN_TS[0][2].temp_short_size = 5
+    NN_load_paths = [
+        ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
+        ["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
+        ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
+        ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
+        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
+        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_V3",8,40],
+        #"PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
+        #"NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",
+        #"NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",
+    ]
 
-    NN_TS[0][1].load_state_dict(torch.load('NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2'))
-    NN_TS[1][1].load_state_dict(torch.load('NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1'))
-    NN_TS[2][1].load_state_dict(torch.load('PPO_2025_05_18_23_00_updates58590'))
+    for path_id in range(len(NN_load_paths)):
+        print("loading:",NN_load_paths[path_id][0])
+        NN_TS[path_id][1].load_state_dict(torch.load(NN_load_paths[path_id][0]))
+        NN_TS[0][2].temp_history_size = NN_load_paths[path_id][2]
+        NN_TS[0][2].temp_short_size = NN_load_paths[path_id][1]
 
 
 
@@ -400,20 +443,20 @@ def make_compareing_test(NUM_TESTS):
                 temp_shadeuling_model=tuple[1])
         
         collect_run_result(run_results,new_problem.getDimention())
-        if i % 1 == 0:
-            save_flat_sa_results_to_csv()
+        save_flat_sa_results_to_csv()
+            
 
 
-# h = "y"            
-# while(h == "y"):
-#     make_ploting_test()
-#     h = input("continue?:")
+#h = "y"            
+#while(h == "y"):
+#   make_ploting_test()
+#   h = input("continue?:")
 
 
-#make_compareing_test(2000)
+make_compareing_test(10000)
 
 
-compareTempSheduler()
+#compareTempSheduler()
 
 
 

@@ -160,6 +160,8 @@ Do tgo nagroda znacząco zmieniona: (ogólnie uproszczona i dodano KARĘ ZA zbyd
 
                                                                 UWAGA TEGO NIE TESTOWANO NA POPRAWNYCH DANYCH
 
+        self.temp_history_size = 25
+        self.temp_short_size = 5
 
         F F F F F
 
@@ -315,9 +317,9 @@ Zmiany w uczeniu PPO:
         G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4    G4
 
 
-Wnioski z G3
+--Wnioski z G3--
 
-REWARD IMPROVMENT Z ZAKRESU (60-90)
+--REWARD IMPROVMENT Z ZAKRESU (60-90)--
 
 
 
