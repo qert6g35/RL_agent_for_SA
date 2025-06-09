@@ -47,11 +47,11 @@ class Problem(ABC):
 
 class TSP(Problem):
     #its TSP with returns
-    def __init__(self,generation_dim = 0,range = [50,300]):
+    def __init__(self,generation_dim = 0,range = [50,300],generate_harder_instance = False):
         # if distances is not None:
         #     self.distances = distances
         # else:
-        if len(range) == 2:
+        if len(range) == 2 and generation_dim == 0:
             generation_dim = r.randint(range[0],range[1])
         if generation_dim == 0:
             problem = tsplib95.load(self.choose_random_file('TSP_examle'))
@@ -62,7 +62,10 @@ class TSP(Problem):
             self.graph = problem.get_graph(normalize=True)
         else:
             self.dim = generation_dim
-            self.graph = self.generate_tsp_graph()
+            if generate_harder_instance:
+                self.graph = self.generate_tsp_graph_random_distances()
+            else:
+                self.graph = self.generate_tsp_graph()
         
         self.upperBound = None
         self.use_smart_neighbour = False
@@ -174,7 +177,39 @@ class TSP(Problem):
     def getDimention(self):
         return self.dim
     
+    def generate_tsp_graph_random_distances(self):
+        """
+        Generuje instancję problemu TSP jako pełny graf,
+        gdzie odległość między każdą parą miast jest losowa.
+        Pozycje miast nie są używane.
+        """
+        print(f"\nGenerowanie problemu TSP (losowe odległości) o wymiarze: {self.dim}\n")
+        
+        G = nx.Graph()
+
+        # Dodajemy wierzchołki (miasta) do grafu
+        for i in range(self.dim):
+            G.add_node(i)
+
+        # Określamy zakres dla losowych odległości, np. od 1 do 100
+        min_dist = self.dim
+        max_dist = self.dim * 100
+
+        # Dodajemy krawędzie między każdą parą miast z losową wagą.
+        # Pętla for j in range(i + 1, ...) zapewnia, że każdą parę miast rozważamy tylko raz.
+        for i in range(self.dim):
+            for j in range(i + 1, self.dim):
+                # Losujemy wagę (odległość) dla tej krawędzi
+                weight = random.randint(min_dist, max_dist)
+                G.add_edge(i, j, weight=weight)
+
+        print(f"Wygenerowano problem (losowe odległości) o wymiarze: {self.dim}")
+        return G
+
     def generate_tsp_graph(self):
+        print("")
+        print("Generateing TSP problem with dim:",self.dim)
+        print("")
         """Generuje instancję problemu TSP jako pełny graf z wagami euklidesowymi."""
         G = nx.Graph()
         coord_range = self.dim * 10

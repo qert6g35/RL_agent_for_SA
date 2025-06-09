@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 import numpy as np
 from torch.distributions.categorical import Categorical
 
@@ -50,6 +51,9 @@ class PPO_NN_v2(nn.Module):
         logits = self.actor(x)
         probs = Categorical(logits=logits)
         return probs.sample()
+    
+    def get_deterministic_action(self, x):
+        return torch.argmax(self.actor(x), dim=-1)
 
 class PPO_NN(nn.Module):
 

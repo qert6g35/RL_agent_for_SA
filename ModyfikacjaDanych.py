@@ -31,24 +31,25 @@ import pandas as pd
 
 def estimate_sa_steps1(n):
     if n <= 100:
-        alpha = 11.0
-        min_steps = 10000
+        alpha = 15.0
+        min_steps = 1500
     elif n <= 200:
-        alpha = 8.0
+        alpha = 11.0
         min_steps = estimate_sa_steps(100)
+        print(min_steps)
     elif n <= 500:
-        alpha = 5.0
+        alpha = 8.0
         min_steps = estimate_sa_steps(200)
     else:
         # Zakładamy, że funkcja ma działać do 500, jak w oryginale
         return 100000  # wartość ograniczona przez 1e5
 
-    return min(max(int(alpha * (n ** 1.59)), min_steps), int(1e5))
+    return min(max(int(alpha * (n ** 1.59))/10, min_steps), int(1e5))
 
 def estimate_sa_steps(n):
     if n <= 100:
         alpha = 15.0
-        min_steps = 15000
+        min_steps = 1500
     elif n <= 200:
         alpha = 11.0
         min_steps = estimate_sa_steps(100)
@@ -60,7 +61,7 @@ def estimate_sa_steps(n):
         return 100000  # wartość ograniczona przez 1e5
 
     return min(max(int(alpha * (n ** 1.59)), min_steps), int(1e5))
-
+print(estimate_sa_steps(109))
 # Zakres wartości n do wykresu
 n_values = np.arange(50, 301)
 step_values = [estimate_sa_steps(n) for n in n_values]

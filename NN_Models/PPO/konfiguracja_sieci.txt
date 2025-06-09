@@ -301,9 +301,10 @@ Zmiany w nagrodzie:
 Zmiany w uczeniu PPO:
 
         total_timesteps 100kk >>> 200kk (ogólne zwiększonie iloścki wykonanych probek)
-        num_steps 256 >>> 512 (ilosc stepow wykonanych w każdym srodowisku)
         num_envs 3 >>> 10 (ilosc srodowisk odpalonych na raz)
         self.ent_coef 0.05 >>> 0.1 wzmacniamy eksplorację agenta
+        num_steps 256 >>> 512 (ilosc stepow wykonanych w każdym srodowisku)
+        
         update_epochs 3 >>> 1 mniej powtórzeń uczenia dla jednego zestawu danych
         num_of_minibatches 5 >>> 10
 
@@ -430,10 +431,6 @@ W envie BARDZO małe zmiany śladowe poprawki w zasadzieG6
     dodatkowo zmiana w wyłapywaniu cold_walk_punishment
                 if new_observation[-5] < 0.081: <<<< 0.04
 
-
-    NAJNOWSZE OBSERWACJE SUGEROWAŁY PRZYTŁOCZENIE NAGRODĄ ZA TRENDY 
-
-    zmniejszenie wsp. za trendy z 0.0125 >> 0.0025
 
             self.norm_reward_scale = 20.0 (było 8.0) trochę podnosimy nagrodę za zmalezienie lepszego rozw. 
 

@@ -5,7 +5,7 @@ from TempSheduler import TempSheduler
     
 
 class SA:
-    def __init__(self, preset_problem:Problem.Problem = None, initial_solution = None,skip_initialization = False):
+    def __init__(self, preset_problem:Problem.Problem = None, initial_solution = None,skip_initialization = False,use_harder_TSP = False):
         if skip_initialization == True:
             #params
             self.steps_done = 0
@@ -17,15 +17,15 @@ class SA:
             self.best_solution = self.current_solution
             self.best_solution_value = self.current_solution_value
         else:
-            self.reset(preset_problem,initial_solution)
+            self.reset(preset_problem,initial_solution,use_harder_TSP)
 
-    def reset(self,preset_problem:Problem.Problem = None, initial_solution = None):
+    def reset(self,preset_problem:Problem.Problem = None, initial_solution = None,use_harder_TSP = False):
         #params
         self.steps_done = 0
         if preset_problem is not None:
             self.problem = preset_problem
         else:
-            self.problem = Problem.TSP()
+            self.problem = Problem.TSP(generate_harder_instance=use_harder_TSP)
         #setting up initial solution
         if initial_solution != None:
             self.current_solution = initial_solution

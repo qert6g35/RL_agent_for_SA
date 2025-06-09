@@ -1,5 +1,7 @@
 from ast import mod
 from cProfile import label
+
+from matplotlib.style import use
 #from sympy import total_degree
 from DQN import DQN_Models
 from PPO import PPO_Model
@@ -118,13 +120,13 @@ class SA_env(gym.Env):
             self.current_temp = self.starting_temp
         pass
 
-    def reset(self,seed=None, options=None,preset_problem = None,initial_solution = None,reset_sa=True):
+    def reset(self,seed=None, options=None,preset_problem = None,initial_solution = None,reset_sa=True,use_lower_maxsteps = False,use_harder_TSP = False):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
         if self.SA == None:
-            self.SA = SA.SA(preset_problem=preset_problem,initial_solution=initial_solution)
+            self.SA = SA.SA(preset_problem=preset_problem,initial_solution=initial_solution,use_harder_TSP=use_harder_TSP)
         elif reset_sa:
-            self.SA.reset(preset_problem=preset_problem,initial_solution=initial_solution)
+            self.SA.reset(preset_problem=preset_problem,initial_solution=initial_solution,use_harder_TSP=use_harder_TSP)
         deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
         if deltaEnergy <= 0:
             deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
@@ -135,6 +137,8 @@ class SA_env(gym.Env):
         self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
         self.stesp_of_stagnation
         self.max_steps = self.estimate_sa_steps()
+        if use_lower_maxsteps:
+            self.max_steps //= 2
         self.SA_steps = int(self.max_steps / self.steps_per_temp)
         self.reward_lowerd_steps = 0.02 * self.SA_steps
         
@@ -488,7 +492,7 @@ class SA_env(gym.Env):
             min_steps = self.estimate_sa_steps(200)
         return min(max(int(alpha * (n ** 1.59)),min_steps),1e5)
    
-    def runTest(self,model,generate_plot_data = False):
+    def runTest(self,model,generate_plot_data = False,use_deterministic_actions = True):
         a = [0 for _ in range(len(self.actions))]
         obs = self.observation()
         self.run_history = []
@@ -496,7 +500,10 @@ class SA_env(gym.Env):
             #getting new temperature
             with torch.no_grad():
                 if type(model) in PPO_Model.PPO_MODELS:
-                    actionNR = model.get_action(torch.tensor(obs, dtype=torch.float32))
+                    if use_deterministic_actions:
+                        actionNR = model.get_deterministic_action(torch.tensor(obs, dtype=torch.float32))
+                    else:
+                        actionNR = model.get_action(torch.tensor(obs, dtype=torch.float32))
                 elif type(model) in DQN_Models.DQN_MODELS:
                     actionNR = model(torch.tensor(obs, dtype=torch.float32).unsqueeze(0))
                     actionNR = actionNR.max(1).indices.view(1, 1).item()
