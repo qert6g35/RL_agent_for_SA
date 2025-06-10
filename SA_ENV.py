@@ -30,12 +30,12 @@ class SA_env(gym.Env):
                  use_observation_divs = False,
                  use_time_temp_info = True,
                  use_new_lower_actions = False,
-                 steps_per_temp = 10,
+                 steps_per_temp = 1,
                  temperature_change_type:TemperatureChangeStrategy = TemperatureChangeStrategy.AddStarting
                  ):
         # elements that shouldn't change when SA is changed
         self.max_temp_accepting_chance = 0.85
-        self.min_temp_accepting_chance = 0.001
+        self.min_temp_accepting_chance = 0.0005
         if use_new_lower_actions:
             self.actions = [float(f) * 0.01 for f in range(95,106,1)]#[0.85, 0.88, 0.91, 0.9400000000000001, 0.97, 1.0, 1.03, 1.06, 1.09, 1.12, 1.1500000000000001]
         else:
@@ -134,11 +134,13 @@ class SA_env(gym.Env):
                 print("Used upperbound for delta energy!!")
                 deltaEnergy = self.SA.problem.getUpperBound()/10
         self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
+        print("starting temp",self.starting_temp)
         self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
+        print("min temp", self.min_temp)
         self.stesp_of_stagnation
         self.max_steps = self.estimate_sa_steps()
         if use_lower_maxsteps:
-            self.max_steps //= 2
+            self.max_steps //= 10
         self.SA_steps = int(self.max_steps / self.steps_per_temp)
         self.reward_lowerd_steps = 0.02 * self.SA_steps
         

@@ -1,0 +1,64 @@
+# 1. IMPORTY I KONFIGURACJA
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+import glob
+import os
+
+MAKE_PLOTS_FOR_DETEMINISTICS = False
+MAKE_PLOTS_FOR_HALF_STEPS = False
+SHOW_PLOTS_FOR_HARDER_PROBLEM = False
+
+plt.rcParams['figure.figsize'] = (10, 6)
+
+def get_df_data(D,Hs,Hp):
+    # 2. Ścieżka do folderu z plikami
+    folder_path = "./"#Tests/FinalTests/"  # lub np. "./dane/"
+    if Hp:
+        pattern = os.path.join(folder_path, "sa_results_hard_half_stoch_*.csv")
+    elif Hs:
+        if D == True:
+            pattern = os.path.join(folder_path, "sa_results_half_det_*.csv")
+        else:
+            pattern = os.path.join(folder_path, "sa_results_half_stoch_*.csv")
+    else: 
+        if D == True:
+            pattern = os.path.join(folder_path, "sa_results_det_*.csv")
+        else:
+            pattern = os.path.join(folder_path, "sa_results_stoch_*.csv")
+
+
+    # 3. Wczytywanie i łączenie danych
+    all_files = glob.glob(pattern)
+    df_list = []
+
+    for file in all_files:
+        temp_df = pd.read_csv(file)
+        temp_df['source_file'] = os.path.basename(file)  # opcjonalnie: dodaj nazwę pliku jako kolumnę
+        df_list.append(temp_df)
+
+    # 4. Łączenie w jeden DataFrame
+    return pd.concat(df_list, ignore_index=True)
+
+
+df_extra = get_df_data(not MAKE_PLOTS_FOR_DETEMINISTICS,MAKE_PLOTS_FOR_HALF_STEPS,SHOW_PLOTS_FOR_HARDER_PROBLEM)
+# Wybór rekordów z df_extra, które mają ts_name == 'E' (lub dowolną listę wartości)
+to_add = df_extra[df_extra['ts_name'].isin([
+    "GeometricV1",
+    "GeometricV2",
+    "Linear",
+    "LogarithmicV1",
+    "LogarithmicV2",
+    "ReciprocalV1",
+    "ReciprocalV2"
+])]  # lub więcej: ['E', 'F_2']
+
+# Dodanie tych rekordów do końcowego df
+df = pd.concat([get_df_data(MAKE_PLOTS_FOR_DETEMINISTICS,MAKE_PLOTS_FOR_HALF_STEPS,SHOW_PLOTS_FOR_HARDER_PROBLEM), to_add], ignore_index=True)
+df = df[~df["ts_name"].isin(['Const_100'])]
+
+# 3. Krótkie „smoking‑gun”
+display(df)
+display(df.describe(include='all'))

@@ -3,6 +3,7 @@ from glob import glob
 from pickle import TRUE
 from re import S
 from turtle import color, st
+from numpy import empty
 import test
 from traitlets import Bool
 import Problem
@@ -19,6 +20,7 @@ from collections import Counter
 from typing import List
 import os
 import csv
+import math
 
 def estimate_sa_steps(n = 0):
     if n <= 100:
@@ -284,11 +286,11 @@ def make_ploting_test():
     #NN_TS[4][1].load_state_dict(torch.load('NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160'))
 
 
-    new_problem = Problem.TSP(generation_dim=150)
+    new_problem = Problem.TSP(generation_dim=150,generate_harder_instance=True)
     initial_solution = new_problem.get_initial_solution()
 
     for nn_tuple in NN_TS:
-        nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution,use_lower_maxsteps=True)
+        nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution,use_lower_maxsteps=True,use_harder_TSP=True)
         print("starting temp:",nn_tuple[2].starting_temp)
         print("min temp:",nn_tuple[2].min_temp)
 
@@ -329,7 +331,7 @@ def make_ploting_test():
     #         max_steps=DQN_SA_engine.max_steps, 
     #         temp_shadeuling_model=tuple[1])
 
-def make_compareing_test(NUM_TESTS,run_half_length_test:bool = False,file_name_for_test_save:str ="sa_results.csv",deterministic_action:bool = False,use_harder_TSP = False):
+def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_for_test_save:str ="sa_results.csv",deterministic_action:bool = False,use_harder_TSP = False):
     test_result = {}
 
     def save_flat_sa_results_to_csv(file_path=file_name_for_test_save):
@@ -357,7 +359,6 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = False,file_name_f
         2 - number of iterations needed to reach that result
         '''
         refactored_result = []
-        
         for key in run_result:
             last_value = run_result[key][-1]
             all_values = run_result[key]
@@ -379,53 +380,54 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = False,file_name_f
     # DQN_model = DuelingDQN_NN()
 
     NN_TS = [
-        ("E",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        ("F_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        ("G",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        ("G2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        ("G3_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        ("G3_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        ("G3_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        ("G4_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G4_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G4_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G6_V1_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G6_V1_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G6_V1_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G6_V0_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G6_V0_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        ("G6_V0_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("E",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        # ("F",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        # ("G",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        # ("G2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        # ("G3_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        # ("G3_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        # ("G3_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        # ("G4_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G4_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G4_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G6_V1_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G6_V1_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G6_V1_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G6_V0_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G6_V0_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        # ("G6_V0_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
         #("G6_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
     ]
 
     NN_load_paths = [
-        ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
-        ["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
-        ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
-        ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
-        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
-        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
-        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
-        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
-        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
-        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
-        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
-        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
-        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
-        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
-        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
-        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
+        # ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
+        # ["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
+        # ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
+        # ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
+        # ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
+        # ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
+        # ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
+        # ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
+        # ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
+        # ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
+        # ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
+        # ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
+        # ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
+        # ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
+        # ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
+        # ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
         #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_V3",8,40],
         #"PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
         #"NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",
         #"NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",
     ]
 
-    for path_id in range(len(NN_load_paths)):
-        print("loading:",NN_load_paths[path_id][0])
-        NN_TS[path_id][1].load_state_dict(torch.load(NN_load_paths[path_id][0]))
-        NN_TS[0][2].temp_history_size = NN_load_paths[path_id][2]
-        NN_TS[0][2].temp_short_size = NN_load_paths[path_id][1]
+    if NN_TS.count() > 0:
+        for path_id in range(len(NN_load_paths)):
+            print("loading:",NN_load_paths[path_id][0])
+            NN_TS[path_id][1].load_state_dict(torch.load(NN_load_paths[path_id][0]))
+            NN_TS[0][2].temp_history_size = NN_load_paths[path_id][2]
+            NN_TS[0][2].temp_short_size = NN_load_paths[path_id][1]
 
 
 
@@ -449,52 +451,54 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = False,file_name_f
 
 
     for i in range(NUM_TESTS):
-        new_problem = Problem.TSP(generate_harder_instance=use_harder_TSP)
+        new_problem = Problem.TSP(use_lib_instances=True)#(generate_harder_instance=use_harder_TSP)
         initial_solution = new_problem.get_initial_solution()
 
         # DQN_SA_engine.reset(preset_problem=new_problem,initial_solution=initial_solution)
         # LinerSA.reset(preset_problem=new_problem,initial_solution=initial_solution)
 
-        for nn_tuple in NN_TS:
-            nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution,use_lower_maxsteps=run_half_length_test,use_harder_TSP=use_harder_TSP)
+        # for nn_tuple in NN_TS:
+        #     nn_tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution.copy(),use_lower_maxsteps=run_half_length_test,use_harder_TSP=use_harder_TSP)
 
-        t_max = NN_TS[0][2].starting_temp
-        t_min = NN_TS[0][2].min_temp
+        deltaEnergy = new_problem.EstimateDeltaEnergy()
+        t_max = (deltaEnergy)/-math.log(0.85)
+        t_min = (deltaEnergy)/-math.log(0.001)
         #t_min = NN_TS[0][2].min_temp
         # LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
 
         steps_for_SA = estimate_sa_steps(new_problem.dim)
         if run_half_length_test:
-            steps_for_SA //= 2
+            steps_for_SA //= 100
+        steps_for_SA = int(steps_for_SA)
 
         for tuple in TS:
             tuple[1].reset(t_max,t_min,steps_for_SA)
-            tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution,use_harder_TSP=use_harder_TSP)
+            tuple[2].reset(preset_problem=new_problem,initial_solution=initial_solution.copy(),use_harder_TSP=use_harder_TSP)
 
 
 
         run_results = {}
 
-        for tuple in NN_TS:
-            run_results[tuple[0]] = tuple[2].runTest(model=tuple[1],use_deterministic_actions=deterministic_action)
+        # for tuple in NN_TS:
+        #     run_results[tuple[0]] = tuple[2].runTest(model=tuple[1],use_deterministic_actions=deterministic_action)
             
         for tuple in TS:
             run_results[tuple[0]] = tuple[2].run(
                 max_steps=steps_for_SA, 
                 temp_shadeuling_model=tuple[1])
         
-        collect_run_result(run_results,new_problem.getDimention())
+        collect_run_result(run_results,new_problem.name)
         save_flat_sa_results_to_csv()
             
 
 
 # h = "y"            
 # while(h == "y"):
-#   make_ploting_test()
-#   h = input("continue?:")
+#     make_ploting_test()
+#     h = input("continue?:")
 
 
-make_compareing_test(3400,True,"sa_results_hard_half_stoch_3.csv",True,True)
+make_compareing_test(10000,True,"sa_results_Basic_algs.csv",False,True)
 
 
 #compareTempSheduler()

@@ -47,20 +47,22 @@ class Problem(ABC):
 
 class TSP(Problem):
     #its TSP with returns
-    def __init__(self,generation_dim = 0,range = [50,300],generate_harder_instance = False):
+    def __init__(self,generation_dim = 0,range = [50,300],generate_harder_instance = False,use_lib_instances = False):
         # if distances is not None:
         #     self.distances = distances
         # else:
-        if len(range) == 2 and generation_dim == 0:
+        if len(range) == 2:
             generation_dim = r.randint(range[0],range[1])
-        if generation_dim == 0:
+        if use_lib_instances:
             problem = tsplib95.load(self.choose_random_file('TSP_examle'))
-            while problem.dimension >= 1000:
+            while problem.dimension >= 500 or problem.dimension <= 50:
                 problem = tsplib95.load(self.choose_random_file('TSP_examle'))
             print("choosed problem with dimention:",problem.dimension)
+            self.name = problem.name
             self.dim = problem.dimension
             self.graph = problem.get_graph(normalize=True)
         else:
+            self.name = "g_"+str(generation_dim)
             self.dim = generation_dim
             if generate_harder_instance:
                 self.graph = self.generate_tsp_graph_random_distances()
@@ -131,22 +133,25 @@ class TSP(Problem):
         available_problems = 0
         available_weak_problems = 0
         all_problems = 0
+        dimentions = []
         for file in files:
             all_problems+=1
             path = os.path.join(folder_path, file)
             problem = tsplib95.load(path)
-            if problem.dimension < 2000:
-                available_weak_problems+=1
-                G = problem.get_graph()
+            dimentions.append(problem.name)
+            # if problem.dimension < 2000:
+            #     available_weak_problems+=1
+            #     G = problem.get_graph()
 
-                # Check connectivity
-                if isinstance(G, nx.DiGraph):
-                    is_connected = nx.is_strongly_connected(G)  # For directed graphs
-                else:
-                    is_connected = nx.is_connected(G)  # For undirected graphs
-                if is_connected :
-                    available_problems += 1
-        
+            #     # Check connectivity
+            #     if isinstance(G, nx.DiGraph):
+            #         is_connected = nx.is_strongly_connected(G)  # For directed graphs
+            #     else:
+            #         is_connected = nx.is_connected(G)  # For undirected graphs
+            #     if is_connected :
+            #         available_problems += 1
+        dimentions.sort()
+        print(dimentions)
         print("there are:",all_problems," in folder and ",available_problems," are available, and", available_weak_problems - available_problems)
             
 
@@ -168,7 +173,7 @@ class TSP(Problem):
     def EstimateDeltaEnergy(self):
         n = self.dim
         deltas = []
-        for _ in range(n):
+        for _ in range(1000):
             x = self.get_initial_solution()
             x_value = self.objective_function(x)
             deltas.append(abs(x_value - self.objective_function(self.get_random_neighbor(x))))
@@ -193,7 +198,7 @@ class TSP(Problem):
 
         # Określamy zakres dla losowych odległości, np. od 1 do 100
         min_dist = self.dim
-        max_dist = self.dim * 100
+        max_dist = self.dim * 200
 
         # Dodajemy krawędzie między każdą parą miast z losową wagą.
         # Pętla for j in range(i + 1, ...) zapewnia, że każdą parę miast rozważamy tylko raz.
