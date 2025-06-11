@@ -30,12 +30,12 @@ class SA_env(gym.Env):
                  use_observation_divs = False,
                  use_time_temp_info = True,
                  use_new_lower_actions = False,
-                 steps_per_temp = 1,
+                 steps_per_temp = 10,
                  temperature_change_type:TemperatureChangeStrategy = TemperatureChangeStrategy.AddStarting
                  ):
         # elements that shouldn't change when SA is changed
-        self.max_temp_accepting_chance = 0.85
-        self.min_temp_accepting_chance = 0.0005
+        self.max_temp_accepting_chance = 0.8
+        self.min_temp_accepting_chance = 0.01
         if use_new_lower_actions:
             self.actions = [float(f) * 0.01 for f in range(95,106,1)]#[0.85, 0.88, 0.91, 0.9400000000000001, 0.97, 1.0, 1.03, 1.06, 1.09, 1.12, 1.1500000000000001]
         else:
@@ -100,12 +100,12 @@ class SA_env(gym.Env):
             self.SA_steps = int(self.max_steps / self.steps_per_temp)
             self.reward_lowerd_steps = 0.02 * self.SA_steps
             # elements that should change when SA is 
-            deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
+            deltaEnergy,d_max,d_min = self.SA.problem.EstimateDeltaEnergy()
             if deltaEnergy <= 0:
-                deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
+                deltaEnergy,d_max,d_min = self.SA.problem.EstimateDeltaEnergy()
                 if deltaEnergy <= 0:
                     print("Used upperbound for delta energy!!")
-                    deltaEnergy = self.SA.problem.getUpperBound()/10
+                    deltaEnergy,d_max,d_min = self.SA.problem.getUpperBound()/10
             self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
             self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
             #print("we have starting temp:",self.starting_temp)
@@ -127,20 +127,19 @@ class SA_env(gym.Env):
             self.SA = SA.SA(preset_problem=preset_problem,initial_solution=initial_solution,use_harder_TSP=use_harder_TSP)
         elif reset_sa:
             self.SA.reset(preset_problem=preset_problem,initial_solution=initial_solution,use_harder_TSP=use_harder_TSP)
-        deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
+        deltaEnergy,d_max,d_min = self.SA.problem.EstimateDeltaEnergy()
         if deltaEnergy <= 0:
-            deltaEnergy = self.SA.problem.EstimateDeltaEnergy()
+            deltaEnergy,d_max,d_min = self.SA.problem.EstimateDeltaEnergy()
             if deltaEnergy <= 0:
                 print("Used upperbound for delta energy!!")
-                deltaEnergy = self.SA.problem.getUpperBound()/10
+                deltaEnergy,d_max,d_min = self.SA.problem.getUpperBound()/10
         self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
         print("starting temp",self.starting_temp)
         self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
         print("min temp", self.min_temp)
-        self.stesp_of_stagnation
         self.max_steps = self.estimate_sa_steps()
         if use_lower_maxsteps:
-            self.max_steps //= 10
+            self.max_steps //= 1
         self.SA_steps = int(self.max_steps / self.steps_per_temp)
         self.reward_lowerd_steps = 0.02 * self.SA_steps
         
@@ -225,7 +224,7 @@ class SA_env(gym.Env):
         teperature_factor = (self.current_temp - self.min_temp) /(self.starting_temp - self.min_temp)
         self.last_temps.append(min(teperature_factor,2.0)/2.0)
         
-        self.SA.step(self.current_temp,steps_per_temperature=self.steps_per_temp)
+        acceptance_percentage = self.SA.step(self.current_temp,steps_per_temperature=self.steps_per_temp)
 
         if self.last_best_value != self.SA.best_solution_value:
             self.steps_without_correction = 0
@@ -233,10 +232,10 @@ class SA_env(gym.Env):
         else:
             self.steps_without_correction += 1
 
-        return was_temp_lower_than_min,teperature_factor
+        return was_temp_lower_than_min,teperature_factor,acceptance_percentage
 
     def step(self,action_number):
-        was_temp_lower_than_min,teperature_factor = self.makeTempChangeStep(action_number)
+        was_temp_lower_than_min,teperature_factor,_ = self.makeTempChangeStep(action_number)
 
         new_observation = self.observation()
             #self.run_history.append( new_observation + self.run_history[-1][-6:])
@@ -498,6 +497,7 @@ class SA_env(gym.Env):
         a = [0 for _ in range(len(self.actions))]
         obs = self.observation()
         self.run_history = []
+        percentage_list = []
         for t in count():
             #getting new temperature
             with torch.no_grad():
@@ -514,13 +514,14 @@ class SA_env(gym.Env):
                 #perform SA step
                 a[actionNR.item()] += 1
                 self.makeTempChangeStep(action_number=actionNR)
+                #percentage_list.append(percentage*100)
                 
             #collecting data
             self.run_history.append( obs + [self.current_temp,0])
             obs = self.observation()
 
             if t%int(self.max_steps/(10*self.steps_per_temp)) == 0 :
-                print("test proges",t,"/",self.max_steps)
+                print("test proges",t*self.steps_per_temp,"/",self.max_steps)
 
             if self.SA.steps_done >= self.max_steps:
                 break
@@ -529,7 +530,7 @@ class SA_env(gym.Env):
         print(a)
         if generate_plot_data:
             transposed_run_history = list(map(list, zip(*self.run_history)))
-            return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],transposed_run_history[-2]  #best_values,current_values,temperature_values
+            return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],[x/self.starting_temp*85 for x in transposed_run_history[-2]],percentage_list  #best_values,current_values,temperature_values
         else:
             return [x[1] * unnormalize_factor for x in self.run_history] 
 

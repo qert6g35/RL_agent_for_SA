@@ -55,9 +55,10 @@ class TSP(Problem):
             generation_dim = r.randint(range[0],range[1])
         if use_lib_instances:
             problem = tsplib95.load(self.choose_random_file('TSP_examle'))
-            while problem.dimension >= 500 or problem.dimension <= 50:
+            problems_with_optimal_tour = ["kroA100", "kroA150", "kroA200", "kroB100", "kroB150", "kroB200"]
+            while problem.name not in problems_with_optimal_tour:
                 problem = tsplib95.load(self.choose_random_file('TSP_examle'))
-            print("choosed problem with dimention:",problem.dimension)
+            print("choosed problem",problem.name)
             self.name = problem.name
             self.dim = problem.dimension
             self.graph = problem.get_graph(normalize=True)
@@ -138,7 +139,8 @@ class TSP(Problem):
             all_problems+=1
             path = os.path.join(folder_path, file)
             problem = tsplib95.load(path)
-            dimentions.append(problem.name)
+            if problem.dimension in range(50,300):
+                dimentions.append(problem.name)
             # if problem.dimension < 2000:
             #     available_weak_problems+=1
             #     G = problem.get_graph()
@@ -177,7 +179,7 @@ class TSP(Problem):
             x = self.get_initial_solution()
             x_value = self.objective_function(x)
             deltas.append(abs(x_value - self.objective_function(self.get_random_neighbor(x))))
-        return np.mean(deltas)
+        return np.mean(deltas), np.max(deltas), np.min(deltas)
 
     def getDimention(self):
         return self.dim

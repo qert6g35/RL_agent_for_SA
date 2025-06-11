@@ -4,8 +4,12 @@ import pandas as pd
 
 from Problem import TSP
 
-TSP().evaluate_tsp_files()
-
+TSP(use_lib_instances=True)
+TSP(use_lib_instances=True)
+TSP(use_lib_instances=True)
+TSP(use_lib_instances=True)
+TSP(use_lib_instances=True)
+TSP(use_lib_instances=True)
 #   READ ME
 #
 # z racji na to że zapomniaem uwzgldnić to, że SA wykonuje 10 kroków dla PPO_G2
