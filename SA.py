@@ -1,6 +1,7 @@
 import Problem
 import random
 import math
+import matplotlib.pyplot as plt
 from TempSheduler import TempSheduler
     
 
@@ -60,24 +61,51 @@ class SA:
                     self.acceptNewSolution(new_solution,new_solution_value)
 
             self.steps_done += 1
+        return math.exp(-(new_solution_value - self.current_solution_value)/temp_value)
 
     def run(self, max_steps:int, temp_shadeuling_model:TempSheduler,generate_plot_data = False):
         best_values = []
         current_values = []
         temperature_values = []
+        
         for _ in range(max_steps):
             #getting new temperature
             temp = temp_shadeuling_model.getTemp(self.steps_done)
             
+            #collecting data
+            best_values.append(self.best_solution_value)
+            #if generate_plot_data:
+            current_values.append(self.current_solution_value)
+            #if generate_plot_data:
+            temperature_values.append(temp)
+
             #perform SA step
             self.step(temp)
 
             #collecting data
             best_values.append(self.best_solution_value)
-            if generate_plot_data:
-                current_values.append(self.current_solution_value)
-            if generate_plot_data:
-                temperature_values.append(temp)
+            #if generate_plot_data:
+            current_values.append(self.current_solution_value)
+            #if generate_plot_data:
+            temperature_values.append(temp)
+
+        # Tworzenie figury i 4 subplots
+        fig, axs = plt.subplots(2, 1, figsize=(8, 12), sharex=True)
+
+        # Wykresy
+        axs[0].plot(best_values, color='blue')
+        axs[0].set_title('best_values vs cueent_values')
+        axs[0].grid(True)
+
+        axs[0].plot(current_values, color='green')
+
+        axs[1].plot(temperature_values, color='red')
+        axs[1].set_title('temps')
+        axs[1].grid(True)
+
+        # Dostosowanie layoutu
+        plt.tight_layout()
+        plt.show()
 
         if generate_plot_data:
             return best_values,current_values,temperature_values

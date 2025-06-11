@@ -422,7 +422,7 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
         #"NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",
     ]
 
-    if NN_TS.count() > 0:
+    if len(NN_TS) > 0:
         for path_id in range(len(NN_load_paths)):
             print("loading:",NN_load_paths[path_id][0])
             NN_TS[path_id][1].load_state_dict(torch.load(NN_load_paths[path_id][0]))
@@ -468,7 +468,7 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
 
         steps_for_SA = estimate_sa_steps(new_problem.dim)
         if run_half_length_test:
-            steps_for_SA //= 100
+            steps_for_SA //= 25
         steps_for_SA = int(steps_for_SA)
 
         for tuple in TS:
@@ -498,7 +498,7 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
 #     h = input("continue?:")
 
 
-make_compareing_test(10000,True,"sa_results_Basic_algs.csv",False,True)
+make_compareing_test(10000,True,"sa_results_TEST.csv",False,True)
 
 
 #compareTempSheduler()
