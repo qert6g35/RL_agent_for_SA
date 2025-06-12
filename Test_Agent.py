@@ -16,9 +16,19 @@ import SA
 import torch
 from collections import Counter
 from typing import List
-import os
 import csv
 import math
+import threading
+import os
+import psutil
+import sys
+import warnings
+
+import winerror
+import win32api
+import win32job
+
+
 
 def estimate_sa_steps(n = 0):
     if n <= 100:
@@ -499,6 +509,11 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
 
 
     for i in range(NUM_TESTS):
+        print()
+        print()
+        process = psutil.Process(os.getpid())
+        print(f"Memory usage: {process.memory_info().rss / 1024 ** 2:.2f} MB")
+
         print("saveing for:",file_name_for_test_save)
         new_problem = Problem.TSP(use_lib_instances=True)#(generate_harder_instance=use_harder_TSP)
         initial_solution = new_problem.get_initial_solution()
@@ -545,16 +560,21 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
         collect_run_result(run_results,new_problem.name)
         save_flat_sa_results_to_csv()
             
+offset  = input("podaj nazwę pliku zapisowego:")
+
+threading.stack_size(1024 * 1024 * 254)
+
+def worker():
+    make_compareing_test(20000,False,"sa_results_final_"+str(offset)+".csv",True)
+    pass
 
 
-# h = "y"            
-# while(h == "y"):
-#     make_ploting_test()
-#     h = input("continue?:")
+t = threading.Thread(target=worker)
+t.start()
+t.join()
 
 
-x = input("podaj numer pliku do zapisu:")
-make_compareing_test(20000,False,"sa_results_final_"+str(x)+".csv",True)
+
 
 
 #compareTempSheduler()
