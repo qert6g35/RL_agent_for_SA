@@ -74,6 +74,7 @@ class TSP(Problem):
         self.use_smart_neighbour = False
         super().__init__()
 
+
     def objective_function(self, x: Any) -> float:
         return sum([self.graph.edges[x[-1],x[0]]["weight"]] + [self.graph.edges[x[i],x[i+1]]["weight"] for i in range(len(x)-1)])
     

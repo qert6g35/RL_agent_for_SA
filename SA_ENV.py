@@ -134,9 +134,9 @@ class SA_env(gym.Env):
                 print("Used upperbound for delta energy!!")
                 deltaEnergy,d_max,d_min = self.SA.problem.getUpperBound()/10
         self.starting_temp = (deltaEnergy)/-math.log(self.max_temp_accepting_chance)
-        print("starting temp",self.starting_temp)
+        #print("starting temp",self.starting_temp)
         self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
-        print("min temp", self.min_temp)
+        #print("min temp", self.min_temp)
         self.max_steps = self.estimate_sa_steps()
         if use_lower_maxsteps:
             self.max_steps //= 1
@@ -520,14 +520,14 @@ class SA_env(gym.Env):
             self.run_history.append( obs + [self.current_temp,0])
             obs = self.observation()
 
-            if t%int(self.max_steps/(10*self.steps_per_temp)) == 0 :
+            if t%int(self.max_steps/(10*self.steps_per_temp)) == -1 :
                 print("test proges",t*self.steps_per_temp,"/",self.max_steps)
 
             if self.SA.steps_done >= self.max_steps:
                 break
 
         unnormalize_factor =  self.SA.problem.getUpperBound() 
-        print(a)
+        #print(a)
         if generate_plot_data:
             transposed_run_history = list(map(list, zip(*self.run_history)))
             return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],[x/self.starting_temp*85 for x in transposed_run_history[-2]],percentage_list  #best_values,current_values,temperature_values
