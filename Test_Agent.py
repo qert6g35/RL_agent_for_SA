@@ -561,7 +561,7 @@ def worker(offset, worker_id):
     print()
     print("worker ",worker_id," zaczyna pracę")
     print()
-    make_compareing_test(50,False,"sa_results_final_"+str(offset)+str(worker_id)+".csv",True)
+    make_compareing_test(20,False,"sa_results_final_"+str(offset)+str(worker_id)+".csv",True)
     print()
     print("worker ",worker_id," kończy pracę")
     print()
