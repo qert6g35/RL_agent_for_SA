@@ -525,7 +525,7 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
 
         deltaEnergy,d_max,d_min = new_problem.EstimateDeltaEnergy()
         t_max = (deltaEnergy)/-math.log(0.85)
-        t_min = max((deltaEnergy)/-math.log(0.5),1)
+        t_min = max((deltaEnergy)/-math.log(0.01),1)
         #print("max_temp:",t_max)
         #print("min_temp:",t_min)
         #t_min = NN_TS[0][2].min_temp
@@ -561,7 +561,7 @@ def worker(offset, worker_id):
     print()
     print("worker ",worker_id," zaczyna pracę")
     print()
-    make_compareing_test(20,False,"sa_results_final_"+str(offset)+str(worker_id)+".csv",True)
+    make_compareing_test(50,False,"sa_results_final_"+str(offset)+str(worker_id)+".csv",True)
     print()
     print("worker ",worker_id," kończy pracę")
     print()
