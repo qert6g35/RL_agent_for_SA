@@ -35,7 +35,7 @@ class SA_env(gym.Env):
                  ):
         # elements that shouldn't change when SA is changed
         self.max_temp_accepting_chance = 0.8
-        self.min_temp_accepting_chance = 0.01
+        self.min_temp_accepting_chance = 0.001
         if use_new_lower_actions:
             self.actions = [float(f) * 0.01 for f in range(95,106,1)]#[0.85, 0.88, 0.91, 0.9400000000000001, 0.97, 1.0, 1.03, 1.06, 1.09, 1.12, 1.1500000000000001]
         else:
@@ -137,7 +137,7 @@ class SA_env(gym.Env):
         #print("starting temp",self.starting_temp)
         self.min_temp = (deltaEnergy)/-math.log(self.min_temp_accepting_chance)
         #print("min temp", self.min_temp)
-        self.max_steps = self.estimate_sa_steps()
+        self.max_steps = self.estimate_sa_steps()*2
         if use_lower_maxsteps:
             self.max_steps //= 1
         self.SA_steps = int(self.max_steps / self.steps_per_temp)
@@ -530,7 +530,7 @@ class SA_env(gym.Env):
         #print(a)
         if generate_plot_data:
             transposed_run_history = list(map(list, zip(*self.run_history)))
-            return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],[x/self.starting_temp*85 for x in transposed_run_history[-2]],percentage_list  #best_values,current_values,temperature_values
+            return [x * unnormalize_factor for x in transposed_run_history[1]],[x * unnormalize_factor for x in transposed_run_history[0]],[(x-self.min_temp)/(self.starting_temp-self.min_temp)*100 for x in transposed_run_history[-2]],percentage_list  #best_values,current_values,temperature_values
         else:
             return [x[1] * unnormalize_factor for x in self.run_history] 
 

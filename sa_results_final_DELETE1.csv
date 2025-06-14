@@ -1,0 +1,9 @@
+dim,ts_name,best_value,steps_to_best_value
+kroA100,Const_100,121828,83837
+kroA100,Linear,51887,113484
+kroA100,ReciprocalV1,43238,104247
+kroA100,ReciprocalV2,76072,113500
+kroA100,GeometricV1,48401,113338
+kroA100,GeometricV2,54680,113457
+kroA100,LogarithmicV1,39309,30491
+kroA100,LogarithmicV2,128353,17669

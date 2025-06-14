@@ -85,12 +85,11 @@ class SA:
             #collecting data
             best_values.append(self.best_solution_value)
             # #if generate_plot_data:
-            # current_values.append(self.current_solution_value)
+            #current_values.append(self.current_solution_value)
             # #if generate_plot_data:
-            # temperature_values.append(temp)
+            #temperature_values.append(temp)
 
-        # Tworzenie figury i 4 subplots
-        # fig, axs = plt.subplots(2, 1, figsize=(8, 12), sharex=True)
+        #fig, axs = plt.subplots(2, 1, figsize=(8, 12), sharex=True)
 
         # # Wykresy
         # axs[0].plot(best_values, color='blue')

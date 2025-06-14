@@ -208,71 +208,85 @@ def make_ploting_test():
     # PPO_nn_6563 = PPO_NN( None,len(DQN_SA_engine.observation()),DQN_SA_engine.action_space.n)
     # PPO_nn_6563.load_state_dict(torch.load('PPO_2025_04_22_21_52_updates6563'))
     NN_TS = [
-        # ("E deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
-        # ("E stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        #("F deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        # ("F stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        # ("G deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
-        # ("G stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        # ("G2 deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
-        # ("G2 stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        ("G3_1 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
+       ("E deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
+       ("E stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
+       ("F deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
+       ("F stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
+       ("G deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
+       ("G stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
+       ("G2 deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
+       ("G2 stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
+        #("G3_1 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         #("G3_2 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         #("G3_3 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         # #("G3_1 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        # ("H1 deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
+        ("H1 deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
         # #("G3_2 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         # #("G3_3 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
-        # ("H1 stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        ("G4_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        ("H1 stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
+        #("G4_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         #("G4_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         #("G4_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
-        #("H2 deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
-        #("H2 stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
-        #("H3 deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        ("H2 deterministyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        ("H2 stochastyczna",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        ("H3 deterministyczna ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        ("H3 stochastyczna ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        ("H3 deterministyczna  ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        ("H3 stochastyczna  ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        ("H3 deterministyczna   ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        ("H3 stochastyczna   ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        ("H3 deterministyczna    ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        ("H3 stochastyczna    ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        ("  H3 deterministyczna    ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        ("  H3 stochastyczna    ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        (" H3 deterministyczna ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        (" H3 stochastyczna ",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        #("H3 deterministyczna5",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
+        #("H3 stochastyczna5",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         #("G6_V1_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         #("G6_V1_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
-        ("G6_V1_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
-        ("G6_V0_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
+        
+        #("G6_V0_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         #("G6_V0_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         #("G6_V0_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         #("G6_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
     ]
 
     NN_load_paths = [
-        # ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
-        # ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
-        # ["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
-        #["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
-        # ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
-        # ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
-        # ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
-        # ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
-        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
+        ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
+        ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
+        ["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
+        ["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
+        ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
+        ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
+        ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
+        ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
         # ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
-        #["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
-        # ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
+        # ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
+
+        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
+        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
         #["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
         # ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
         ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
-        # ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
+        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
         #["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
         # ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
        # ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
         #["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
-        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
-        # ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
-        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
-        # ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
         ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
-        # ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
         ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
-        # ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
-        #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
-        # ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
-        #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
-        # ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
-        # ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
+        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
         #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
         #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
         #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_V3",8,40],
@@ -334,7 +348,7 @@ def make_ploting_test():
         # Dostosowanie wyglądu
         plt.tight_layout()
         plt.show()
-
+    input("")
 
     # for tuple in TS:
     #     run_results[tuple[0]] = tuple[2].run(
@@ -395,34 +409,34 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
         ("G d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
         ("G2 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
         ("G3_1 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),True),
-        #("G3_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        #("G3_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G3_2 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G3_3 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
         ("G4_1 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
-        #("G4_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G4_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G6_V1_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G6_V1_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G4_2 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G4_3 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V1_1 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V1_2 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
         ("G6_V1_3 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
         ("G6_V0_1 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),True),
-        #("G6_V0_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G6_V0_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V0_2 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V0_3 d",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
         #("G6_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
         ("E s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         ("F s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         ("G s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         ("G2 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
         ("G3_1 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True),False),
-        #("G3_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
-        #("G3_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G3_2 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
+        ("G3_3 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],11),SA_ENV.SA_env(use_new_lower_actions=True)),
         ("G4_1 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
-        #("G4_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G4_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G6_V1_1",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G6_V1_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G4_2 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G4_3 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V1_1 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V1_2 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
         ("G6_V1_3 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
         ("G6_V0_1 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env(),False),
-        #("G6_V0_2",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
-        #("G6_V0_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V0_2 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
+        ("G6_V0_3 s",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
         #("G6_3",PPO_NN_v2( None,DQN_SA_engine.observation_space.shape[0],DQN_SA_engine.action_space.n),SA_ENV.SA_env()),
     ]
 
@@ -432,37 +446,38 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
         ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
         ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
         ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
-        #["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
-        #["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
+        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
+        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
         ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
-        #["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
-        #["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
-        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
-        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
+        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
+        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
         ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
         ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
-        #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
-        #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
         #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_V3",8,40],
         #"PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
         #"NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",
         #"NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",
+
         ["NN_Models/PPO/E_10SPT/PPO_2025_05_03_19_53_updates24392",5,25],
         ["NN_Models/PPO/F/2/PPO_2025_05_05_08_04_updates104160",10,50],
         ["NN_Models/PPO/G/PPO_2025_05_06_22_21_updates255480",5,25],
         ["NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",5,25],
         ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best1",8,40],
-        #["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
-        #["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
+        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best2",8,40],
+        ["NN_Models/PPO/G3/PPO_2025_05_18_23_00_Best3",8,40],
         ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.961440821419651_envs_updated60165",8,40],
-        #["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
-        #["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
-        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
-        #["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
+        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.774389414221403_envs_updated6565",8,40],
+        ["NN_Models/PPO/G4/PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best1",8,40],
+        ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best2",8,40],
         ["NN_Models/PPO/G6/PPO_2025_05_27_20_44_Best3",8,40],
         ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_PRE_TREND_ADJUSTMENT",8,40],
-        #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
-        #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best2_PRE_TREND_ADJUSTMENT",8,40],
+        ["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best3_PRE_TREND_ADJUSTMENT",8,40],
         #["NN_Models/PPO/G6_with_offset_onFiew_first_steps/PPO_2025_05_27_20_44_Best1_V3",8,40],
         #"PPO_2025_05_23_21_43_value3.609286070321052_envs_updated76410",
         #"NN_Models/PPO/G2/PPO_2025_05_13_00_22_updates130200_2",
@@ -487,12 +502,12 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
 
     TS = [
         #TempSheduler.LinearTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
-        #("Const_100",TempSheduler.ConstTempSheduler(),SA.SA(skip_initialization=True)),
+        ("Const_100",TempSheduler.ConstTempSheduler(),SA.SA(skip_initialization=True)),
         ("Linear",TempSheduler.LinearScheduler_FirstKind(),SA.SA(skip_initialization=True)),
 
         #TempSheduler.ReciprocalTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
-        #("ReciprocalV1",TempSheduler.ReciprocalScheduler_FirstKind(),SA.SA(skip_initialization=True)),
-        #("ReciprocalV2",TempSheduler.ReciprocalScheduler_SecondKind(),SA.SA(skip_initialization=True)),
+        ("ReciprocalV1",TempSheduler.ReciprocalScheduler_FirstKind(),SA.SA(skip_initialization=True)),
+        ("ReciprocalV2",TempSheduler.ReciprocalScheduler_SecondKind(),SA.SA(skip_initialization=True)),
 
         #TempSheduler.GeometricTempSheduler(start_temp=start,end_temp=end,end_steps=steps),
         ("GeometricV1",TempSheduler.GeometricScheduler_FirstKind(),SA.SA(skip_initialization=True)),
@@ -524,14 +539,14 @@ def make_compareing_test(NUM_TESTS,run_half_length_test:bool = True,file_name_fo
         #     nn_tuple2[2].reset(preset_problem=new_problem,initial_solution=initial_solution.copy(),use_lower_maxsteps=run_half_length_test,use_harder_TSP=use_harder_TSP)
 
         deltaEnergy,d_max,d_min = new_problem.EstimateDeltaEnergy()
-        t_max = (deltaEnergy)/-math.log(0.85)
-        t_min = max((deltaEnergy)/-math.log(0.01),1)
+        t_max = (deltaEnergy)/-math.log(0.8)
+        t_min = max((deltaEnergy)/-math.log(0.005),1)
         #print("max_temp:",t_max)
         #print("min_temp:",t_min)
         #t_min = NN_TS[0][2].min_temp
         # LinearTS.reset(DQN_SA_engine.starting_temp,DQN_SA_engine.min_temp,DQN_SA_engine.max_steps)
 
-        steps_for_SA = estimate_sa_steps(new_problem.dim)
+        steps_for_SA = estimate_sa_steps(new_problem.dim)*2
         if run_half_length_test:
             steps_for_SA //= 1
         steps_for_SA = int(steps_for_SA)
@@ -561,7 +576,7 @@ def worker(offset, worker_id):
     print()
     print("worker ",worker_id," zaczyna pracę")
     print()
-    make_compareing_test(100,False,"sa_results_final_"+str(offset)+str(worker_id)+".csv",True)
+    make_compareing_test(32,False,"sa_results_final_"+str(offset)+str(worker_id)+".csv",True)
     print()
     print("worker ",worker_id," kończy pracę")
     print()
@@ -601,7 +616,7 @@ if __name__ == "__main__":
 
 #compareTempSheduler()
 
-
+#make_ploting_test()
 
 
 # ✅ 1. Jakość uzyskanego rozwiązania (wartość funkcji celu)

@@ -55,7 +55,7 @@ class TSP(Problem):
             generation_dim = r.randint(range[0],range[1])
         if use_lib_instances:
             problem = tsplib95.load(self.choose_random_file('TSP_examle'))
-            problems_with_optimal_tour = ["kroA100", "kroA150", "kroA200", "kroB100", "kroB150", "kroB200"]
+            problems_with_optimal_tour = ["eil51","st70","gr96","kroA100", "kroA150", "kroB100", "kroB150"]
             while problem.name not in problems_with_optimal_tour:
                 problem = tsplib95.load(self.choose_random_file('TSP_examle'))
             print("choosed problem",problem.name)
@@ -71,7 +71,7 @@ class TSP(Problem):
                 self.graph = self.generate_tsp_graph()
         
         self.upperBound = None
-        self.use_smart_neighbour = False
+        self.use_smart_neighbour = True
         super().__init__()
 
 
